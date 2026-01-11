@@ -2,11 +2,13 @@ import { Gift, CreditCard, Package, CheckCircle, Clock, DollarSign } from "lucid
 
 interface Stats {
   totalPresentes: number
+  totalCatalog: number
   totalPix: number
   totalFisico: number
   valorTotalPix: number
   valorTotalFisico: number
   valorTotal: number
+  valorTotalCatalogo: number
   recebidosConfirmados: number
   pendentesConferencia: number
 }
@@ -27,16 +29,27 @@ export function AdminStats({ stats }: AdminStatsProps) {
     <div className="space-y-8">
       <div>
         <h2 className="font-serif text-2xl text-foreground mb-6">Resumo Geral</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-background rounded-lg p-6 border border-border">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-muted rounded-md">
                 <Gift className="w-5 h-5 text-foreground" />
               </div>
-              <span className="text-sm text-muted-foreground">Total de Presentes</span>
+              <span className="text-sm text-muted-foreground">Total de Presentes Comprados</span>
             </div>
             <p className="text-3xl font-semibold text-foreground">{stats.totalPresentes}</p>
           </div>
+
+          <div className="bg-background rounded-lg p-6 border border-border">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-muted rounded-md">
+                <Package className="w-5 h-5 text-foreground" />
+              </div>
+              <span className="text-sm text-muted-foreground">Itens no Catálogo</span>
+            </div>
+            <p className="text-3xl font-semibold text-foreground">{stats.totalCatalog}</p>
+          </div>
+
 
           <div className="bg-background rounded-lg p-6 border border-border">
             <div className="flex items-center gap-3 mb-3">
@@ -99,6 +112,14 @@ export function AdminStats({ stats }: AdminStatsProps) {
             </div>
             <p className="text-2xl font-semibold text-blue-600">{formatCurrency(stats.valorTotalFisico)}</p>
             <p className="text-sm text-muted-foreground mt-1">Valor estimado em presentes físicos</p>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="font-serif text-lg text-foreground mb-2">Valor total do catálogo</h3>
+          <div className="bg-background rounded-lg p-4 border border-border inline-block">
+            <p className="text-2xl font-semibold">{formatCurrency(stats.valorTotalCatalogo)}</p>
+            <p className="text-sm text-muted-foreground mt-1">Soma dos preços estimados de todos os itens</p>
           </div>
         </div>
       </div>

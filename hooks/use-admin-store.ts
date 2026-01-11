@@ -78,6 +78,7 @@ export function useAdminStore() {
 
     const totalPix = pixGifts.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
     const totalFisico = fisicoGifts.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
+    const totalCatalogValue = gifts.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
 
     const recebidosConfirmados = purchased.filter(
       (g) => (g.compradoPor as { recebidoConfirmado?: boolean })?.recebidoConfirmado,
@@ -85,11 +86,13 @@ export function useAdminStore() {
 
     return {
       totalPresentes: purchased.length,
+      totalCatalog: gifts.length,
       totalPix: pixGifts.length,
       totalFisico: fisicoGifts.length,
       valorTotalPix: totalPix,
       valorTotalFisico: totalFisico,
       valorTotal: totalPix + totalFisico,
+      valorTotalCatalogo: totalCatalogValue,
       recebidosConfirmados,
       pendentesConferencia: purchased.length - recebidosConfirmados,
     }
