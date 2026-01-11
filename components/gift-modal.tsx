@@ -121,7 +121,9 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        onOpenAutoFocus={(e) => e.preventDefault()}>
         {showSuccess ? (
           <div className="py-12 text-center">
             <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
@@ -154,7 +156,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                 <div>
                   <p className="font-medium text-destructive">Nome ou telefone não encontrado</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Seus dados não foram localizados na lista de convidados.
+                    Seus dados não foram localizados na lista de convidados, favor entrar em contato com os noivos.
                   </p>
                 </div>
               </div>
