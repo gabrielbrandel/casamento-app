@@ -31,10 +31,23 @@ export function ConfirmDialog({
         </DialogHeader>
         {description && <p className="text-sm text-muted-foreground mb-4">{description}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation()
+              onCancel()
+            }}
+          >
             {cancelText}
           </Button>
-          <Button onClick={onConfirm}>{confirmText}</Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation()
+              onConfirm()
+            }}
+          >
+            {confirmText}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
