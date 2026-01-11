@@ -23,9 +23,9 @@ export const initialGifts: Gift[] = [
     id: "1",
     nome: "Microondas",
     categoria: "Eletrodomésticos",
-    precoEstimado: "R$ 800,00",
+    precoEstimado: "R$ 599,99",
     faixaPreco: "alto",
-    imageUrl: "/microwave-oven-kitchen-appliance.jpg",
+    imageUrl: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcSbz3pOd-KIshPInnTzTVn7pAP-GJ-iGEkumrVr2gBXNGa2EsvtGlS3VIxieBlv_KzDhSx0k8Xjp9f1M02l0bHzjDByrAznKvqhvUKm9goT-JdE9s8OB_jVkrLPbP5rsTp37t0S3w-Wpw&usqp=CAc",
     status: "disponivel",
   },
   {
