@@ -53,7 +53,7 @@ export function useAdminStore() {
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -64,7 +64,7 @@ export function useAdminStore() {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -75,7 +75,7 @@ export function useAdminStore() {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, precoEstimado, faixaPreco: faixaPreco ?? gift.faixaPreco } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -86,7 +86,7 @@ export function useAdminStore() {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -99,7 +99,7 @@ export function useAdminStore() {
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })

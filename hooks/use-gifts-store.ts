@@ -69,9 +69,9 @@ export function useGiftsStore() {
           : gift,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      // notify other hook instances in this window
+      // notify other hook instances in this window (async to avoid setState during render)
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -90,7 +90,7 @@ export function useGiftsStore() {
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -101,7 +101,7 @@ export function useGiftsStore() {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -112,7 +112,7 @@ export function useGiftsStore() {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, precoEstimado, faixaPreco: faixaPreco ?? gift.faixaPreco } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })
@@ -123,7 +123,7 @@ export function useGiftsStore() {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
+        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
       } catch {}
       return updated
     })

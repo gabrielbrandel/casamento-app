@@ -152,60 +152,123 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
               </div>
             )}
 
-            <div className="space-y-4">
-              {isAdminLoggedIn && (
-                <div className="p-4 border rounded-md bg-secondary space-y-3">
-                  <Label htmlFor="admin-image">Editar imagem (Admin)</Label>
-                  <Input id="admin-image" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="Cole o endereço da imagem (https://...)" />
+              <div className="space-y-6">
+                {isAdminLoggedIn && (
+                  <div className="space-y-6">
+                    <div className="p-4 border rounded-md bg-secondary space-y-3">
+                      <Label htmlFor="admin-image">Editar imagem (Admin)</Label>
+                      <Input
+                        id="admin-image"
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        placeholder="Cole o endereço da imagem (https://...)"
+                      />
 
-                  {imageUrlInput ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-20 h-20 relative rounded overflow-hidden">
-                        <Image src={imageUrlInput} alt="preview" fill className="object-contain" unoptimized />
-                      </div>
-                      <div className="flex gap-2 ml-auto">
-                        <Button variant="outline" onClick={() => { setImageUrlInput(gift.imageUrl || ""); onClose(); }}>Cancelar</Button>
-                        <Button onClick={() => {
-                          const url = imageUrlInput.trim()
-                          if (!url) return
-                          if (!/^https?:\/\//.test(url)) { alert("Insira um endereço válido começando com http:// ou https://"); return }
-                          try {
-                            updateAdminGiftImage(gift.id, url)
-                            updatePublicGiftImage(gift.id, url)
-                            toast({ title: "Imagem atualizada", description: "A imagem foi alterada com sucesso." })
-                          } finally {
-                            setImageUrlInput(url)
-                            onClose()
-                          }
-                        }}>Aplicar imagem</Button>
-                      </div>
+                      {imageUrlInput ? (
+                        <div className="flex items-center gap-3">
+                          <div className="w-20 h-20 relative rounded overflow-hidden">
+                            <Image
+                              src={imageUrlInput}
+                              alt="preview"
+                              fill
+                              className="object-contain"
+                              unoptimized
+                            />
+                          </div>
+                          <div className="flex gap-2 ml-auto">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setImageUrlInput(gift.imageUrl || "")
+                                onClose()
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                const url = imageUrlInput.trim()
+                                if (!url) return
+                                if (!/^https?:\/\//.test(url)) {
+                                  alert(
+                                    "Insira um endereço válido começando com http:// ou https://"
+                                  )
+                                  return
+                                }
+                                try {
+                                  updateAdminGiftImage(gift.id, url)
+                                  updatePublicGiftImage(gift.id, url)
+                                  toast({
+                                    title: "Imagem atualizada",
+                                    description: "A imagem foi alterada com sucesso.",
+                                  })
+                                } finally {
+                                  setImageUrlInput(url)
+                                  onClose()
+                                }
+                              }}
+                            >
+                              Aplicar imagem
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
 
-                  <div className="mt-4 p-4 border rounded-md bg-secondary space-y-3">
-                    <Label htmlFor="admin-price">Editar preço (Admin)</Label>
-                    <Input id="admin-price" value={priceInput} onChange={(e) => setPriceInput(e.target.value)} placeholder="Ex: R$ 199,99" />
-                    <div className="flex gap-2 ml-auto">
-                      <Button variant="outline" onClick={() => setPriceInput(gift.precoEstimado || "")}>Cancelar</Button>
-                      <Button onClick={() => {
-                        const newPrice = priceInput.trim()
-                        if (!newPrice) { alert("Insira um preço válido"); return }
-                        const parsePrice = (p: string) => parseFloat(p.replace(/[^\d,\.]/g, "").replace(/\./g, "").replace(/,/g, ".")) || 0
-                        const priceNum = parsePrice(newPrice)
-                        const faixa: "baixo" | "medio" | "alto" = priceNum <= 100 ? "baixo" : priceNum <= 1000 ? "medio" : "alto"
-                        try {
-                          updateAdminGiftPrice(gift.id, newPrice, faixa)
-                          updatePublicGiftPrice(gift.id, newPrice, faixa)
-                          toast({ title: "Preço atualizado", description: "O preço foi atualizado com sucesso." })
-                        } finally {
-                          setPriceInput(newPrice)
-                        }
-                      }}>Aplicar preço</Button>
+                    <div className="p-4 border rounded-md bg-secondary space-y-3">
+                      <Label htmlFor="admin-price">Editar preço (Admin)</Label>
+                      <Input
+                        id="admin-price"
+                        value={priceInput}
+                        onChange={(e) => setPriceInput(e.target.value)}
+                        placeholder="Ex: R$ 199,99"
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          onClick={() => setPriceInput(gift.precoEstimado || "")}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const newPrice = priceInput.trim()
+                            if (!newPrice) {
+                              alert("Insira um preço válido")
+                              return
+                            }
+                            const parsePrice = (p: string) =>
+                              parseFloat(
+                                p
+                                  .replace(/[^\d,\.]/g, "")
+                                  .replace(/\./g, "")
+                                  .replace(/,/g, ".")
+                              ) || 0
+                            const priceNum = parsePrice(newPrice)
+                            const faixa: "baixo" | "medio" | "alto" =
+                              priceNum <= 100
+                                ? "baixo"
+                                : priceNum <= 1000
+                                  ? "medio"
+                                  : "alto"
+                            try {
+                              updateAdminGiftPrice(gift.id, newPrice, faixa)
+                              updatePublicGiftPrice(gift.id, newPrice, faixa)
+                              toast({
+                                title: "Preço atualizado",
+                                description: "O preço foi atualizado com sucesso.",
+                              })
+                            } finally {
+                              setPriceInput(newPrice)
+                            }
+                          }}
+                        >
+                          Aplicar preço
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-
+                )}
               <div>
                 <Label htmlFor="nome">Seu Nome Completo *</Label>
                 <Input id="nome" value={nome} onChange={(e) => { setNome(e.target.value); if (errors.nome || errors.guestNotFound) setErrors({ ...errors, nome: undefined, guestNotFound: false }) }} placeholder="Digite seu nome completo" className={errors.nome ? "border-destructive" : ""} />
