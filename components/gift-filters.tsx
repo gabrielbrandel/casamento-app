@@ -73,9 +73,9 @@ export function GiftFilters({
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="todos">Todos</SelectItem>
           <SelectItem value="disponivel">Disponíveis</SelectItem>
           <SelectItem value="comprado">Comprados</SelectItem>
+          <SelectItem value="todos">Todos</SelectItem>
         </SelectContent>
       </Select>
 
