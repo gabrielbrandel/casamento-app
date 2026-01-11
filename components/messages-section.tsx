@@ -1,12 +1,14 @@
 "use client"
 
 import { useGiftsStore } from "@/hooks/use-gifts-store"
+import { useAuthStore } from "@/hooks/use-auth-store"
 import { Card, CardContent } from "@/components/ui/card"
 import { Heart, MessageCircle } from "lucide-react"
 
 export function MessagesSection() {
   const { getMessages } = useGiftsStore()
   const messages = getMessages()
+  const { isAdminLoggedIn } = useAuthStore()
 
   if (messages.length === 0) {
     return (
@@ -50,7 +52,9 @@ export function MessagesSection() {
                   </div>
                 </div>
                 <p className="text-foreground/80 italic">&ldquo;{message.mensagem}&rdquo;</p>
-                <p className="text-xs text-muted-foreground mt-3">Presente: {message.presente}</p>
+                {isAdminLoggedIn && (
+                  <p className="text-xs text-muted-foreground mt-3">Presente: {message.presente}</p>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -9,7 +9,7 @@ const locations = [
   {
     id: "cerimonia",
     title: "Cerimônia",
-    name: "Igreja Santa Maria Gorete",
+    name: "Igreja Santa Maria Goretti",
     address: "Av. Brasil, 2000 - Jardim América, São Paulo - SP",
     mapsUrl: "https://www.google.com/maps/search/?api=1&query=Igreja+Nossa+Senhora+do+Brasil+São+Paulo",
   },

@@ -1,8 +1,14 @@
 "use client"
 
-import { Heart, MapPin, Calendar } from "lucide-react"
+import { Heart, MapPin, Calendar, Shield } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useAuthStore } from "@/hooks/use-auth-store"
+import { useRouter } from "next/navigation"
 
 export function HeroBanner() {
+  const { isAdminLoggedIn } = useAuthStore()
+  const router = useRouter()
+
   return (
     <section className="relative min-h-[80vh] flex items-center justify-center bg-secondary overflow-hidden">
       <div className="absolute inset-0 opacity-10">
@@ -12,6 +18,7 @@ export function HeroBanner() {
       </div>
 
       <div className="container mx-auto px-4 py-16 text-center relative z-10">
+        
         <div className="mb-8">
           <Heart className="w-12 h-12 mx-auto text-foreground/60 mb-6" />
         </div>
@@ -32,16 +39,29 @@ export function HeroBanner() {
 
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5" />
-            <span className="text-lg">São Paulo, SP</span>
+            <span className="text-lg">Maringá, PR</span>
           </div>
         </div>
 
         <div className="mt-16 space-y-2 text-muted-foreground">
           <p className="text-sm uppercase tracking-widest">Cerimônia</p>
-          <p className="text-lg">Igreja Santa Maria Gorete</p>
+          <p className="text-lg">Igreja Santa Maria Goretti</p>
           <p className="text-sm mt-4 uppercase tracking-widest">Festa</p>
           <p className="text-lg">Chácara Bela vista - Sarandi</p>
         </div>
+        {isAdminLoggedIn && (
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="default"
+              size="md"
+              onClick={() => router.push("/admin")}
+              className="flex items-center gap-3 px-4 py-2 rounded-md shadow-lg hover:shadow-xl transition-all"
+            >
+              <Shield className="w-5 h-5" />
+              <span className="font-medium">Área Administrativa</span>
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   )
