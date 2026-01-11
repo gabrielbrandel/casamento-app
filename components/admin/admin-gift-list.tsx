@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useAdminStore } from "@/hooks/use-admin-store"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
 import { useToast } from "@/hooks/use-toast"
+import { markReceivedApi } from "@/lib/api-client"
 
 type TabType = "ativos" | "desativados" | "recebidos" | "jatemos"
 
@@ -58,7 +59,7 @@ export function AdminGiftList() {
           </Button>
 
           <Button size="sm" variant={tab === "recebidos" ? "secondary" : "outline"} onClick={() => setTab("recebidos")}>
-            <GiftIcon className="w-4 h-4 mr-1" /> Presentes recebidos
+            <GiftIcon className="w-4 h-4 mr-1" /> Recebidos
           </Button>
 
           <Button size="sm" variant={tab === "jatemos" ? "secondary" : "outline"} onClick={() => setTab("jatemos")}>
@@ -74,8 +75,15 @@ export function AdminGiftList() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {list.map((gift) => (
-            <div key={gift.id} className="flex items-center gap-4 p-4 bg-background rounded-lg border border-border">
-              <img src={gift.imageUrl || "/placeholder.svg"} alt={gift.nome} className="w-16 h-16 object-cover rounded-md" />
+            <div
+              key={gift.id}
+              className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-background rounded-lg border border-border"
+            >
+              <img
+                src={gift.imageUrl || "/placeholder.svg"}
+                alt={gift.nome}
+                className="w-16 h-16 object-cover rounded-md"
+              />
 
               <div className="flex-1">
                 <p className="font-medium">{gift.nome}</p>
@@ -84,31 +92,35 @@ export function AdminGiftList() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {tab === "ativos" ? (
                   <>
                     <Button
                       size="sm"
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => {
                         setGiftVisibility(gift.id, false)
                         setPublicVisibility(gift.id, false)
                         toast({ title: "Presente desativado" })
                       }}
                     >
-                      <EyeOff className="w-4 h-4 mr-1" /> Desativar
+                      <EyeOff className="w-4 h-4 mr-2 sm:mr-1" />
+                      <span className="sm:inline">Desativar</span>
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => {
                         setGiftObtained(gift.id, true)
                         setPublicObtained(gift.id, true)
                         toast({ title: "Marcado como já temos" })
                       }}
                     >
-                      <Heart className="w-4 h-4 mr-1" /> Marcar como já temos
+                      <Heart className="w-4 h-4 mr-2 sm:mr-1" />
+                      <span className="sm:inline">Já temos</span>
                     </Button>
                   </>
                 ) : tab === "recebidos" ? (
@@ -116,23 +128,42 @@ export function AdminGiftList() {
                     <Button
                       size="sm"
                       variant={gift.compradoPor?.recebidoConfirmado ? "default" : "outline"}
-                      onClick={() => {
+                      className="w-full sm:w-auto"
+                      onClick={async () => {
                         const next = !gift.compradoPor?.recebidoConfirmado
+                        try {
+                          await markReceivedApi(gift.id, next)
+                        } catch (e) {
+                          // fallback to local update if API fails
+                          console.error("markReceivedApi failed", e)
+                        }
                         markAsReceived(gift.id, next)
                         toast({ title: next ? "Recebimento confirmado" : "Recebimento desmarcado" })
                       }}
                     >
-                      <Check className="w-4 h-4 mr-1" />{" "}
+                      <Check className="w-4 h-4 mr-2 sm:mr-1" />
                       {gift.compradoPor?.recebidoConfirmado ? "Conferido" : "Conferir"}
                     </Button>
 
-                    <Button size="sm" variant="outline" onClick={() => removerParaAtivos(gift)}>
-                      <RotateCcw className="w-4 h-4 mr-1" /> Remover
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => removerParaAtivos(gift)}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 sm:mr-1" />
+                      Remover
                     </Button>
                   </>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={() => removerParaAtivos(gift)}>
-                    <RotateCcw className="w-4 h-4 mr-1" /> Remover
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => removerParaAtivos(gift)}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2 sm:mr-1" />
+                    Remover
                   </Button>
                 )}
               </div>
