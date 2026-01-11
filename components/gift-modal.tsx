@@ -74,7 +74,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       return
     }
 
-    const guest = findGuest(nome, telefone)
+    const guest = findGuest(nome)
     if (!guest) {
       setErrors({ guestNotFound: true })
       return
@@ -279,27 +279,31 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
               <div>
                 <Label htmlFor="nome">Seu Nome Completo *</Label>
-                <Input
-                  id="nome"
-                  value={nome}
-                  onChange={(e) => {
-                    setNome(e.target.value)
-                    if (errors.nome || errors.guestNotFound) setErrors({ ...errors, nome: undefined, guestNotFound: false })
-                  }}
-                />
+                  <Input
+                    id="nome"
+                    value={nome}
+                    onChange={(e) => {
+                      setNome(e.target.value)
+                      if (errors.nome || errors.guestNotFound)
+                        setErrors({ ...errors, nome: undefined, guestNotFound: false })
+                    }}
+                    className={errors.nome ? "border-destructive focus-visible:ring-destructive" : ""}
+                  />
               </div>
 
               <div>
                 <Label htmlFor="telefone">Número de Telefone *</Label>
-                <Input
-                  id="telefone"
-                  value={telefone}
-                  onChange={(e) => {
-                    setTelefone(formatPhone(e.target.value))
-                    if (errors.telefone || errors.guestNotFound)
-                      setErrors({ ...errors, telefone: undefined, guestNotFound: false })
-                  }}
-                />
+                  <Input
+                    id="telefone"
+                    value={telefone}
+                    onChange={(e) => {
+                      setTelefone(formatPhone(e.target.value))
+                      if (errors.telefone || errors.guestNotFound)
+                        setErrors({ ...errors, telefone: undefined, guestNotFound: false })
+                    }}
+                    className={errors.telefone ? "border-destructive focus-visible:ring-destructive" : ""}
+                  />
+
               </div>
 
               <div>

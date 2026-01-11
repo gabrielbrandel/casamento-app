@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <span>Feito com</span>
           <Heart className="w-4 h-4 fill-current text-destructive" />
-          <span>para Thais & Gabriel</span>
+          <span>Thais & Gabriel</span>
         </div>
         <p className="text-sm text-muted-foreground mt-2">25 de Abril de 2026</p>
       </div>

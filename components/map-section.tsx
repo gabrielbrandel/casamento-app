@@ -15,7 +15,7 @@ const locations = [
   },
   {
     id: "festa",
-    title: "Festa",
+    title: "Recepção",
     name: "Chácara Bela vista - Sarandi",
     address: "Rua das Flores, 500 - Moema, São Paulo - SP",
     mapsUrl: "https://www.google.com/maps/search/?api=1&query=Espaço+Gardens+Moema+São+Paulo",

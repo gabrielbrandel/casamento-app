@@ -53,7 +53,7 @@ export function HeroBanner() {
           <div className="mt-8 flex justify-center">
             <Button
               variant="default"
-              size="md"
+              size="default"
               onClick={() => router.push("/admin")}
               className="flex items-center gap-3 px-4 py-2 rounded-md shadow-lg hover:shadow-xl transition-all"
             >
