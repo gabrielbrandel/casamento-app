@@ -24,10 +24,8 @@ interface GiftCardProps {
 export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
   const isComprado = gift.status === "comprado"
   const { isAdminLoggedIn } = useAuthStore()
-  const { setGiftVisibility: setAdminVisibility } = useAdminStore()
-  const { setGiftVisibility: setPublicVisibility } = useGiftsStore()
-  const { setGiftObtained: setAdminObtained } = useAdminStore()
-  const { setGiftObtained: setPublicObtained } = useGiftsStore()
+  const { setGiftVisibility: setAdminVisibility, setGiftObtained: setAdminObtained } = useAdminStore()
+  const { setGiftVisibility: setPublicVisibility, setGiftObtained: setPublicObtained } = useGiftsStore()
   const { toast } = useToast()
   const [pulsing, setPulsing] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)

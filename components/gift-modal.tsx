@@ -39,15 +39,18 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const [showSuccess, setShowSuccess] = useState(false)
   const [copied, setCopied] = useState(false)
   const [errors, setErrors] = useState<{ nome?: string; telefone?: string; guestNotFound?: boolean }>({})
+
   const [imageUrlInput, setImageUrlInput] = useState("")
+  const [priceInput, setPriceInput] = useState("")
 
   const { isAdminLoggedIn } = useAuthStore()
-  const { updateGiftImage: updateAdminGiftImage } = useAdminStore()
-  const { updateGiftImage: updatePublicGiftImage } = useGiftsStore()
+  const { updateGiftImage: updateAdminGiftImage, updateGiftPrice: updateAdminGiftPrice } = useAdminStore()
+  const { updateGiftImage: updatePublicGiftImage, updateGiftPrice: updatePublicGiftPrice } = useGiftsStore()
   const { toast } = useToast()
 
   useEffect(() => {
     setImageUrlInput(gift?.imageUrl || "")
+    setPriceInput(gift?.precoEstimado || "")
   }, [gift])
 
   const formatPhone = (value: string) => {
@@ -60,14 +63,8 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
   const handleSubmit = () => {
     const newErrors: { nome?: string; telefone?: string; guestNotFound?: boolean } = {}
-
-    if (!nome.trim()) {
-      newErrors.nome = "Nome é obrigatório"
-    }
-    if (!telefone.trim()) {
-      newErrors.telefone = "Telefone é obrigatório"
-    }
-
+    if (!nome.trim()) newErrors.nome = "Nome é obrigatório"
+    if (!telefone.trim()) newErrors.telefone = "Telefone é obrigatório"
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -96,13 +93,13 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       setTipoPagamento("fisico")
       setErrors({})
       onClose()
-    }, 2000)
+    }, 1600)
   }
 
   const copyPixKey = () => {
     navigator.clipboard.writeText(PIX_KEY)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), 1600)
   }
 
   const handleClose = () => {
@@ -141,7 +138,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
               </div>
               <div>
                 <h4 className="font-medium">{gift.nome}</h4>
-                <p className="text-sm text-muted-foreground">{gift.precoEstimado}</p>
+                <p className="text-sm text-muted-foreground">{isAdminLoggedIn ? priceInput || gift.precoEstimado : gift.precoEstimado}</p>
               </div>
             </div>
 
@@ -150,10 +147,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                 <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-destructive">Nome ou telefone não encontrado</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Seus dados não foram localizados na lista de convidados. Por favor, entre em contato com os noivos
-                    para verificar sua inscrição.
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">Seus dados não foram localizados na lista de convidados. Por favor, entre em contato com os noivos para verificar sua inscrição.</p>
                 </div>
               </div>
             )}
@@ -162,118 +156,83 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
               {isAdminLoggedIn && (
                 <div className="p-4 border rounded-md bg-secondary space-y-3">
                   <Label htmlFor="admin-image">Editar imagem (Admin)</Label>
-                  <Input
-                    id="admin-image"
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="Cole o endereço da imagem (https://...)"
-                  />
+                  <Input id="admin-image" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="Cole o endereço da imagem (https://...)" />
+
                   {imageUrlInput ? (
                     <div className="flex items-center gap-3">
                       <div className="w-20 h-20 relative rounded overflow-hidden">
                         <Image src={imageUrlInput} alt="preview" fill className="object-contain" unoptimized />
                       </div>
                       <div className="flex gap-2 ml-auto">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            // reset input to current gift image (cancel) and close modal
-                            setImageUrlInput(gift.imageUrl || "")
+                        <Button variant="outline" onClick={() => { setImageUrlInput(gift.imageUrl || ""); onClose(); }}>Cancelar</Button>
+                        <Button onClick={() => {
+                          const url = imageUrlInput.trim()
+                          if (!url) return
+                          if (!/^https?:\/\//.test(url)) { alert("Insira um endereço válido começando com http:// ou https://"); return }
+                          try {
+                            updateAdminGiftImage(gift.id, url)
+                            updatePublicGiftImage(gift.id, url)
+                            toast({ title: "Imagem atualizada", description: "A imagem foi alterada com sucesso." })
+                          } finally {
+                            setImageUrlInput(url)
                             onClose()
-                          }}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            const url = imageUrlInput.trim()
-                            if (!url) return
-                            if (!/^https?:\/\//.test(url)) {
-                              alert("Insira um endereço válido começando com http:// ou https://")
-                              return
-                            }
-                            try {
-                              updateAdminGiftImage(gift.id, url)
-                              // also update public store so change is visible without reload
-                              updatePublicGiftImage(gift.id, url)
-                              toast({ title: "Imagem atualizada", description: "A imagem foi alterada com sucesso." })
-                            } finally {
-                              setImageUrlInput(url)
-                              onClose()
-                            }
-                          }}
-                        >
-                          Aplicar imagem
-                        </Button>
+                          }
+                        }}>Aplicar imagem</Button>
                       </div>
                     </div>
                   ) : null}
+
+                  <div className="mt-4 p-4 border rounded-md bg-secondary space-y-3">
+                    <Label htmlFor="admin-price">Editar preço (Admin)</Label>
+                    <Input id="admin-price" value={priceInput} onChange={(e) => setPriceInput(e.target.value)} placeholder="Ex: R$ 199,99" />
+                    <div className="flex gap-2 ml-auto">
+                      <Button variant="outline" onClick={() => setPriceInput(gift.precoEstimado || "")}>Cancelar</Button>
+                      <Button onClick={() => {
+                        const newPrice = priceInput.trim()
+                        if (!newPrice) { alert("Insira um preço válido"); return }
+                        const parsePrice = (p: string) => parseFloat(p.replace(/[^\d,\.]/g, "").replace(/\./g, "").replace(/,/g, ".")) || 0
+                        const priceNum = parsePrice(newPrice)
+                        const faixa: "baixo" | "medio" | "alto" = priceNum <= 100 ? "baixo" : priceNum <= 1000 ? "medio" : "alto"
+                        try {
+                          updateAdminGiftPrice(gift.id, newPrice, faixa)
+                          updatePublicGiftPrice(gift.id, newPrice, faixa)
+                          toast({ title: "Preço atualizado", description: "O preço foi atualizado com sucesso." })
+                        } finally {
+                          setPriceInput(newPrice)
+                        }
+                      }}>Aplicar preço</Button>
+                    </div>
+                  </div>
                 </div>
               )}
+
               <div>
                 <Label htmlFor="nome">Seu Nome Completo *</Label>
-                <Input
-                  id="nome"
-                  value={nome}
-                  onChange={(e) => {
-                    setNome(e.target.value)
-                    if (errors.nome || errors.guestNotFound)
-                      setErrors({ ...errors, nome: undefined, guestNotFound: false })
-                  }}
-                  placeholder="Digite seu nome completo"
-                  className={errors.nome ? "border-destructive" : ""}
-                />
+                <Input id="nome" value={nome} onChange={(e) => { setNome(e.target.value); if (errors.nome || errors.guestNotFound) setErrors({ ...errors, nome: undefined, guestNotFound: false }) }} placeholder="Digite seu nome completo" className={errors.nome ? "border-destructive" : ""} />
                 {errors.nome && <p className="text-sm text-destructive mt-1">{errors.nome}</p>}
               </div>
 
               <div>
                 <Label htmlFor="telefone">Número de Telefone *</Label>
-                <Input
-                  id="telefone"
-                  type="tel"
-                  value={telefone}
-                  onChange={(e) => {
-                    setTelefone(formatPhone(e.target.value))
-                    if (errors.telefone || errors.guestNotFound)
-                      setErrors({ ...errors, telefone: undefined, guestNotFound: false })
-                  }}
-                  placeholder="(11) 99999-9999"
-                  className={errors.telefone ? "border-destructive" : ""}
-                />
+                <Input id="telefone" type="tel" value={telefone} onChange={(e) => { setTelefone(formatPhone(e.target.value)); if (errors.telefone || errors.guestNotFound) setErrors({ ...errors, telefone: undefined, guestNotFound: false }) }} placeholder="(11) 99999-9999" className={errors.telefone ? "border-destructive" : ""} />
                 {errors.telefone && <p className="text-sm text-destructive mt-1">{errors.telefone}</p>}
               </div>
 
               <div>
                 <Label htmlFor="mensagem">Mensagem para os Noivos</Label>
-                <Textarea
-                  id="mensagem"
-                  value={mensagem}
-                  onChange={(e) => setMensagem(e.target.value)}
-                  placeholder="Deixe uma mensagem carinhosa..."
-                  rows={3}
-                />
+                <Textarea id="mensagem" value={mensagem} onChange={(e) => setMensagem(e.target.value)} placeholder="Deixe uma mensagem carinhosa..." rows={3} />
               </div>
 
               <div>
                 <Label>Como deseja presentear?</Label>
-                <RadioGroup
-                  value={tipoPagamento}
-                  onValueChange={(v) => setTipoPagamento(v as "fisico" | "pix")}
-                  className="mt-2"
-                >
+                <RadioGroup value={tipoPagamento} onValueChange={(v) => setTipoPagamento(v as "fisico" | "pix")} className="mt-2">
                   <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-secondary/50 transition-colors">
                     <RadioGroupItem value="fisico" id="fisico" />
-                    <Label htmlFor="fisico" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <GiftIcon className="w-4 h-4" />
-                      Vou dar o presente físico
-                    </Label>
+                    <Label htmlFor="fisico" className="flex items-center gap-2 cursor-pointer flex-1"><GiftIcon className="w-4 h-4" />Vou dar o presente físico</Label>
                   </div>
                   <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-secondary/50 transition-colors">
                     <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <CreditCard className="w-4 h-4" />
-                      Vou contribuir via Pix
-                    </Label>
+                    <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer flex-1"><CreditCard className="w-4 h-4" />Vou contribuir via Pix</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -283,19 +242,13 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                   <p className="text-sm text-muted-foreground">Faça o Pix para a chave abaixo:</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 p-2 bg-background rounded text-sm break-all">{PIX_KEY}</code>
-                    <Button variant="outline" size="icon" onClick={copyPixKey} className="flex-shrink-0 bg-transparent">
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
+                    <Button variant="outline" size="icon" onClick={copyPixKey} className="flex-shrink-0 bg-transparent">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Após realizar o Pix, confirme abaixo para registrar seu presente.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Após realizar o Pix, confirme abaixo para registrar seu presente.</p>
                 </div>
               )}
 
-              <Button onClick={handleSubmit} className="w-full" size="lg">
-                Confirmar Presente
-              </Button>
+              <Button onClick={handleSubmit} className="w-full" size="lg">Confirmar Presente</Button>
             </div>
           </>
         )}

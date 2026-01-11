@@ -70,6 +70,17 @@ export function useAdminStore() {
     })
   }, [])
 
+  const updateGiftPrice = useCallback((giftId: string, precoEstimado: string, faixaPreco?: "baixo" | "medio" | "alto") => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, precoEstimado, faixaPreco: faixaPreco ?? gift.faixaPreco } : gift))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
+      return updated
+    })
+  }, [])
+
   const setGiftVisibility = useCallback((giftId: string, ativo: boolean) => {
     setGifts((prev) => {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
@@ -170,6 +181,7 @@ export function useAdminStore() {
     isLoading,
     markAsReceived,
     updateGiftImage,
+    updateGiftPrice,
     setGiftObtained,
     setGiftVisibility,
     addGift,
