@@ -9,8 +9,8 @@ interface AuthState {
   logout: () => void
 }
 
-const ADMIN_USERNAME = "thaisegabriel"
-const ADMIN_PASSWORD = "casamento2024"
+const ADMIN_USERNAME = "admin"
+const ADMIN_PASSWORD = "@amora2016"
 
 export const useAuthStore = create<AuthState>()(
   persist(

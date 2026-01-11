@@ -25,7 +25,7 @@ interface GiftModalProps {
   }) => void
 }
 
-const PIX_KEY = "thais.gabriel@casamento.com.br"
+const PIX_KEY = "thais@carvalho.co"
 
 export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) {
   const [nome, setNome] = useState("")
