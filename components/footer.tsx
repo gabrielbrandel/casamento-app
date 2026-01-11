@@ -9,7 +9,7 @@ export function Footer() {
           <Heart className="w-4 h-4 fill-current text-destructive" />
           <span>para Thais & Gabriel</span>
         </div>
-        <p className="text-sm text-muted-foreground mt-2">15 de Março de 2025</p>
+        <p className="text-sm text-muted-foreground mt-2">25 de Abril de 2026</p>
       </div>
     </footer>
   )

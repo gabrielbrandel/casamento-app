@@ -9,14 +9,14 @@ const locations = [
   {
     id: "cerimonia",
     title: "Cerimônia",
-    name: "Igreja Nossa Senhora do Brasil",
+    name: "Igreja Santa Maria Gorete",
     address: "Av. Brasil, 2000 - Jardim América, São Paulo - SP",
     mapsUrl: "https://www.google.com/maps/search/?api=1&query=Igreja+Nossa+Senhora+do+Brasil+São+Paulo",
   },
   {
     id: "festa",
     title: "Festa",
-    name: "Espaço Gardens",
+    name: "Chácara Bela vista - Sarandi",
     address: "Rua das Flores, 500 - Moema, São Paulo - SP",
     mapsUrl: "https://www.google.com/maps/search/?api=1&query=Espaço+Gardens+Moema+São+Paulo",
   },

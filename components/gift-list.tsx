@@ -18,7 +18,7 @@ export function GiftList() {
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("Todas")
   const [priceRange, setPriceRange] = useState("todas")
-  const [status, setStatus] = useState("todos")
+  const [status, setStatus] = useState("disponivel")
   const [sortOrder, setSortOrder] = useState("none")
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null)
   const [showBackToTop, setShowBackToTop] = useState(false)

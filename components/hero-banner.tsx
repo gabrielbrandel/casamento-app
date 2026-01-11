@@ -25,7 +25,7 @@ export function HeroBanner() {
         <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            <span className="text-lg">15 de Março de 2025</span>
+            <span className="text-lg">25 de Abril de 2026</span>
           </div>
 
           <div className="hidden md:block w-px h-6 bg-border" />
@@ -38,9 +38,9 @@ export function HeroBanner() {
 
         <div className="mt-16 space-y-2 text-muted-foreground">
           <p className="text-sm uppercase tracking-widest">Cerimônia</p>
-          <p className="text-lg">Igreja Nossa Senhora do Brasil</p>
+          <p className="text-lg">Igreja Santa Maria Gorete</p>
           <p className="text-sm mt-4 uppercase tracking-widest">Festa</p>
-          <p className="text-lg">Espaço Gardens</p>
+          <p className="text-lg">Chácara Bela vista - Sarandi</p>
         </div>
       </div>
     </section>

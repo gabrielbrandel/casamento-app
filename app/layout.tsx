@@ -12,7 +12,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "Thais & Gabriel - Lista de Presentes",
-  description: "Lista de presentes de casamento de Thais e Gabriel - 15 de Março de 2025",
+  description: "Lista de presentes de casamento de Thais e Gabriel - 25 de Abril de 2026",
   generator: "v0.app",
   icons: {
     icon: [
