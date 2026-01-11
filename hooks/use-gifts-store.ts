@@ -74,6 +74,40 @@ export function useGiftsStore() {
     })
   }, [])
 
+  const updateGiftImage = useCallback((giftId: string, imageUrl: string) => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const setGiftVisibility = useCallback((giftId: string, ativo: boolean) => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const setGiftObtained = useCallback((giftId: string, obtained: boolean) => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) =>
+        gift.id === giftId ? { ...gift, status: obtained ? ("obtido" as const) : "disponivel" } : gift,
+      )
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const addGift = useCallback((gift: Gift) => {
+    setGifts((prev) => {
+      const updated = [...prev, gift]
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
   const getMessages = useCallback(() => {
     return gifts
       .filter((gift) => gift.compradoPor?.mensagem)
@@ -90,6 +124,10 @@ export function useGiftsStore() {
     isLoading,
     purchaseGift,
     removeGiftPurchase,
+    updateGiftImage,
+    setGiftVisibility,
+    setGiftObtained,
+    addGift,
     getMessages,
   }
 }

@@ -7,6 +7,8 @@ import { GiftCardSkeleton } from "./gift-card-skeleton"
 import { GiftFilters } from "./gift-filters"
 import { GiftModal } from "./gift-modal"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
+import { useAdminStore } from "@/hooks/use-admin-store"
+import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/hooks/use-auth-store"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,7 +16,10 @@ import { LogOut, Shield, ArrowUp } from "lucide-react"
 
 export function GiftList() {
   const { gifts, isLoading, purchaseGift, removeGiftPurchase } = useGiftsStore()
+  const { addGift: addPublicGift } = useGiftsStore()
+  const { addGift: addAdminGift } = useAdminStore()
   const { isAdminLoggedIn, logout } = useAuthStore()
+  const { toast } = useToast()
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("Todas")
   const [priceRange, setPriceRange] = useState("todas")
@@ -22,6 +27,43 @@ export function GiftList() {
   const [sortOrder, setSortOrder] = useState("none")
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [newNome, setNewNome] = useState("")
+  const [newPreco, setNewPreco] = useState("")
+  const [newImage, setNewImage] = useState("")
+  const [newCategoria, setNewCategoria] = useState("")
+  const [adminHighlightId, setAdminHighlightId] = useState<string | null>(null)
+  const handleAddGift = () => {
+    if (!newNome.trim() || !newPreco.trim()) {
+      alert("Nome e preço são obrigatórios")
+      return
+    }
+
+    const priceNum = parsePrice(newPreco)
+    const faixa: "baixo" | "medio" | "alto" = priceNum <= 100 ? "baixo" : priceNum <= 1000 ? "medio" : "alto"
+    const gift: Gift = {
+      id: Date.now().toString(),
+      nome: newNome.trim(),
+      categoria: newCategoria.trim() || "Outros",
+      precoEstimado: newPreco.trim(),
+      faixaPreco: faixa,
+      imageUrl: newImage.trim() || "/placeholder.svg",
+      status: "disponivel",
+      ativo: true,
+    }
+
+    // admin store: prepend so admin sees it first; public store: append
+    addAdminGift(gift)
+    addPublicGift(gift)
+    setAdminHighlightId(gift.id)
+    // clear highlight after a short period
+    setTimeout(() => setAdminHighlightId(null), 6000)
+    toast({ title: 'Item adicionado', description: `${gift.nome} foi adicionado ao catálogo.` })
+
+    setNewNome("")
+    setNewPreco("")
+    setNewImage("")
+    setNewCategoria("")
+  }
 
   const parsePrice = (p: string) => {
     if (!p) return 0
@@ -31,6 +73,8 @@ export function GiftList() {
 
   const filteredGifts = useMemo(() => {
     const base = gifts.filter((gift) => {
+      // hide deactivated items (ativo === false)
+      if (gift.ativo === false) return false
       const matchesSearch = gift.nome.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = category === "Todas" || gift.categoria === category
       const matchesPriceRange = priceRange === "todas" || gift.faixaPreco === priceRange
@@ -47,8 +91,17 @@ export function GiftList() {
       return [...base].sort((a, b) => parsePrice(b.precoEstimado) - parsePrice(a.precoEstimado))
     }
 
+    // If admin added a new item, show it first only for admin
+    if (isAdminLoggedIn && adminHighlightId) {
+      const idx = base.findIndex((g) => g.id === adminHighlightId)
+      if (idx > -1) {
+        const item = base.splice(idx, 1)[0]
+        return [item, ...base]
+      }
+    }
+
     return base
-  }, [gifts, search, category, priceRange, status, sortOrder])
+  }, [gifts, search, category, priceRange, status, sortOrder, isAdminLoggedIn, adminHighlightId])
 
   const handleConfirmGift = (data: {
     nome: string
@@ -106,6 +159,43 @@ export function GiftList() {
             </div>
           )}
         </div>
+
+        {isAdminLoggedIn && (
+          <div className="mb-6 p-4 border rounded-lg bg-secondary">
+            <h3 className="text-sm font-medium mb-2">Adicionar novo item (Admin)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <input
+                className="input input-sm p-2 border rounded"
+                placeholder="Nome do presente"
+                value={newNome}
+                onChange={(e) => setNewNome(e.target.value)}
+              />
+              <input
+                className="input input-sm p-2 border rounded"
+                placeholder="Preço estimado (ex: R$ 199,99)"
+                value={newPreco}
+                onChange={(e) => setNewPreco(e.target.value)}
+              />
+              <input
+                className="input input-sm p-2 border rounded"
+                placeholder="URL da imagem (https://...)"
+                value={newImage}
+                onChange={(e) => setNewImage(e.target.value)}
+              />
+              <input
+                className="input input-sm p-2 border rounded"
+                placeholder="Categoria"
+                value={newCategoria}
+                onChange={(e) => setNewCategoria(e.target.value)}
+              />
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button variant="default" size="sm" onClick={handleAddGift}>
+                Adicionar item
+              </Button>
+            </div>
+          </div>
+        )}
 
         <GiftFilters
           search={search}

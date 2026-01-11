@@ -28,14 +28,14 @@ export function MapSection() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-serif font-light mb-4 text-foreground">Como Chegar</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">Confira os endereços da cerimônia e da festa.</p>
+          <p className="text-muted-foreground max-w-2xl mx-auto">Confira os endereços da cerimônia e da recepção.</p>
         </div>
 
         <div className="max-w-2xl mx-auto">
           <Tabs defaultValue="cerimonia" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="cerimonia">Cerimônia</TabsTrigger>
-              <TabsTrigger value="festa">Festa</TabsTrigger>
+              <TabsTrigger value="festa">Recepção</TabsTrigger>
             </TabsList>
 
             {locations.map((location) => (

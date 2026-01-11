@@ -41,6 +41,40 @@ export function useAdminStore() {
     })
   }, [])
 
+  const updateGiftImage = useCallback((giftId: string, imageUrl: string) => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const setGiftVisibility = useCallback((giftId: string, ativo: boolean) => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const setGiftObtained = useCallback((giftId: string, obtained: boolean) => {
+    setGifts((prev) => {
+      const updated = prev.map((gift) =>
+        gift.id === giftId ? { ...gift, status: obtained ? ("obtido" as const) : "disponivel" } : gift,
+      )
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const addGift = useCallback((gift: Gift) => {
+    setGifts((prev) => {
+      const updated = [gift, ...prev]
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
   const getPurchasedGifts = useCallback(
     (filter: "todos" | "fisico" | "pix") => {
       const purchased = gifts.filter((gift) => gift.status === "comprado" && gift.compradoPor)
@@ -78,7 +112,9 @@ export function useAdminStore() {
 
     const totalPix = pixGifts.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
     const totalFisico = fisicoGifts.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
-    const totalCatalogValue = gifts.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
+    // exclude deactivated and obtained items from catalog totals
+    const activeCatalog = gifts.filter((g) => g.ativo !== false && g.status !== "obtido")
+    const totalCatalogValue = activeCatalog.reduce((acc, g) => acc + parsePrice(g.precoEstimado), 0)
 
     const recebidosConfirmados = purchased.filter(
       (g) => (g.compradoPor as { recebidoConfirmado?: boolean })?.recebidoConfirmado,
@@ -86,7 +122,7 @@ export function useAdminStore() {
 
     return {
       totalPresentes: purchased.length,
-      totalCatalog: gifts.length,
+      totalCatalog: activeCatalog.length,
       totalPix: pixGifts.length,
       totalFisico: fisicoGifts.length,
       valorTotalPix: totalPix,
@@ -98,10 +134,15 @@ export function useAdminStore() {
     }
   }, [gifts])
 
+
   return {
     gifts,
     isLoading,
     markAsReceived,
+    updateGiftImage,
+    setGiftObtained,
+    setGiftVisibility,
+    addGift,
     getPurchasedGifts,
     getMessages,
     getStats,

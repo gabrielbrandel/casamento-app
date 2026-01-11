@@ -16,7 +16,7 @@ type Tab = "dashboard" | "presentes" | "mensagens"
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard")
-  const { isLoading, getPurchasedGifts, getMessages, getStats, markAsReceived } = useAdminStore()
+  const { isLoading, getMessages, getStats } = useAdminStore()
   const router = useRouter()
 
   if (isLoading) {
@@ -104,9 +104,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "dashboard" && <AdminStats stats={stats} />}
-        {activeTab === "presentes" && (
-          <AdminGiftList getPurchasedGifts={getPurchasedGifts} markAsReceived={markAsReceived} />
-        )}
+        {activeTab === "presentes" && <AdminGiftList />}
         {activeTab === "mensagens" && <AdminMessages messages={messages} />}
       </main>
     </div>

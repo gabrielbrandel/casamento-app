@@ -2,142 +2,105 @@
 
 import { useState } from "react"
 import type { Gift } from "@/data/gifts"
-import { Check, X, CreditCard, Package, Filter } from "lucide-react"
+import { Check, X, Filter, Gift as GiftIcon } from "lucide-react"
+import { useAdminStore } from "@/hooks/use-admin-store"
+import { useGiftsStore } from "@/hooks/use-gifts-store"
+import { useToast } from "@/hooks/use-toast"
 
-interface AdminGiftListProps {
-  getPurchasedGifts: (filter: "todos" | "fisico" | "pix") => Gift[]
-  markAsReceived: (giftId: string, received: boolean) => void
-}
+export function AdminGiftList() {
+  const [tab, setTab] = useState<"ativos" | "desativados" | "obtidos">("ativos")
+  const { gifts, setGiftVisibility, setGiftObtained } = useAdminStore()
+  const { setGiftVisibility: setPublicVisibility, setGiftObtained: setPublicObtained } = useGiftsStore()
+  const { toast } = useToast()
 
-export function AdminGiftList({ getPurchasedGifts, markAsReceived }: AdminGiftListProps) {
-  const [filter, setFilter] = useState<"todos" | "fisico" | "pix">("todos")
-  const gifts = getPurchasedGifts(filter)
+  const active = gifts.filter((g) => g.ativo !== false && g.status !== "obtido")
+  const deactivated = gifts.filter((g) => g.ativo === false)
+  const obtained = gifts.filter((g) => g.status === "obtido")
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
-  }
+  const purchased = gifts.filter((g) => g.status === "comprado")
+  const list = tab === "ativos" ? active : tab === "desativados" ? deactivated : tab === "comprados" ? purchased : obtained
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="font-serif text-2xl text-foreground">Presentes Recebidos</h2>
-
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-2xl text-foreground">Gerenciar Presentes</h2>
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <div className="flex rounded-md border border-border overflow-hidden">
-            <button
-              onClick={() => setFilter("todos")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                filter === "todos" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setFilter("pix")}
-              className={`px-4 py-2 text-sm font-medium border-l border-border transition-colors ${
-                filter === "pix" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"
-              }`}
-            >
-              Pix
-            </button>
-            <button
-              onClick={() => setFilter("fisico")}
-              className={`px-4 py-2 text-sm font-medium border-l border-border transition-colors ${
-                filter === "fisico" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"
-              }`}
-            >
-              Físico
-            </button>
-          </div>
+          <button
+            onClick={() => setTab("ativos")}
+            className={`px-3 py-2 text-sm ${tab === "ativos" ? "bg-foreground text-background" : "bg-background text-foreground"}`}
+          >
+            Ativos
+          </button>
+          <button
+            onClick={() => setTab("desativados")}
+            className={`px-3 py-2 text-sm ${tab === "desativados" ? "bg-foreground text-background" : "bg-background text-foreground"}`}
+          >
+            Desativados
+          </button>
+          <button
+            onClick={() => setTab("obtidos")}
+            className={`px-3 py-2 text-sm ${tab === "obtidos" ? "bg-foreground text-background" : "bg-background text-foreground"}`}
+          >
+            Obtidos
+          </button>
+          <button
+            onClick={() => setTab("comprados")}
+            className={`px-3 py-2 text-sm ${tab === "comprados" ? "bg-foreground text-background" : "bg-background text-foreground"}`}
+          >
+            Comprados
+          </button>
         </div>
       </div>
 
-      {gifts.length === 0 ? (
+      {list.length === 0 ? (
         <div className="bg-background rounded-lg border border-border p-12 text-center">
-          <p className="text-muted-foreground">Nenhum presente encontrado com este filtro.</p>
+          <p className="text-muted-foreground">Nenhum presente nesta categoria.</p>
         </div>
       ) : (
-        <div className="bg-background rounded-lg border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Presente</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Comprado por</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Tipo</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Valor</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Data</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-foreground">Conferido</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {gifts.map((gift) => {
-                  const isReceived = (gift.compradoPor as { recebidoConfirmado?: boolean })?.recebidoConfirmado
-                  return (
-                    <tr key={gift.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={gift.imageUrl || "/placeholder.svg"}
-                            alt={gift.nome}
-                            className="w-12 h-12 object-cover rounded-md"
-                          />
-                          <div>
-                            <p className="font-medium text-foreground">{gift.nome}</p>
-                            <p className="text-sm text-muted-foreground">{gift.categoria}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <p className="font-medium text-foreground">{gift.compradoPor?.nome}</p>
-                        <p className="text-sm text-muted-foreground">Família {gift.compradoPor?.familia}</p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            gift.compradoPor?.tipoPagamento === "pix"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {gift.compradoPor?.tipoPagamento === "pix" ? (
-                            <CreditCard className="w-3 h-3" />
-                          ) : (
-                            <Package className="w-3 h-3" />
-                          )}
-                          {gift.compradoPor?.tipoPagamento === "pix" ? "Pix" : "Físico"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-foreground">{gift.precoEstimado}</td>
-                      <td className="px-4 py-4 text-muted-foreground">
-                        {gift.compradoPor?.dataConfirmacao && formatDate(gift.compradoPor.dataConfirmacao)}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => markAsReceived(gift.id, !isReceived)}
-                            className={`p-2 rounded-md transition-colors ${
-                              isReceived
-                                ? "bg-green-100 text-green-600 hover:bg-green-200"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
-                            }`}
-                            title={isReceived ? "Marcar como não conferido" : "Marcar como conferido"}
-                          >
-                            {isReceived ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-1 gap-4">
+          {list.map((gift) => (
+            <div key={gift.id} className="flex items-center gap-4 p-4 bg-background rounded border border-border">
+              <img src={gift.imageUrl || "/placeholder.svg"} alt={gift.nome} className="w-16 h-16 object-cover rounded-md" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{gift.nome}</p>
+                    <p className="text-sm text-muted-foreground">{gift.categoria} — {gift.precoEstimado}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const newState = gift.ativo === false ? true : false
+                        setGiftVisibility(gift.id, newState)
+                        setPublicVisibility(gift.id, newState)
+                        toast({
+                          title: newState ? 'Item ativado' : 'Item desativado',
+                          description: `${gift.nome} ${newState ? 'ativado' : 'desativado'} com sucesso.`,
+                        })
+                      }}
+                      className={`px-2 py-1 text-sm rounded ${gift.ativo === false ? 'ring-2 ring-destructive/40 text-destructive' : 'bg-muted'}`}
+                    >
+                      {gift.ativo === false ? 'Ativar' : 'Desativar'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const willBeObtained = gift.status !== 'obtido'
+                        setGiftObtained(gift.id, willBeObtained)
+                        setPublicObtained(gift.id, willBeObtained)
+                        toast({
+                          title: willBeObtained ? 'Item marcado como obtido' : 'Item desmarcado',
+                          description: willBeObtained ? `${gift.nome} marcado como obtido.` : `${gift.nome} removido de obtidos.`,
+                        })
+                      }}
+                      className={`px-2 py-1 text-sm rounded ${gift.status === 'obtido' ? 'bg-green-100 text-green-700' : 'bg-muted'}`}
+                    >
+                      {gift.status === 'obtido' ? 'Obtido' : 'Marcar obtido'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

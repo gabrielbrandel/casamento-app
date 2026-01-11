@@ -1,6 +1,8 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 import Image from "next/image"
 import type { Gift } from "@/data/gifts"
@@ -9,6 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Heart, Check, X } from "lucide-react"
 import { useAuthStore } from "@/hooks/use-auth-store"
+import { useAdminStore } from "@/hooks/use-admin-store"
+import { useGiftsStore } from "@/hooks/use-gifts-store"
+import { useToast } from "@/hooks/use-toast"
 
 interface GiftCardProps {
   gift: Gift
@@ -19,6 +24,14 @@ interface GiftCardProps {
 export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
   const isComprado = gift.status === "comprado"
   const { isAdminLoggedIn } = useAuthStore()
+  const { setGiftVisibility: setAdminVisibility } = useAdminStore()
+  const { setGiftVisibility: setPublicVisibility } = useGiftsStore()
+  const { setGiftObtained: setAdminObtained } = useAdminStore()
+  const { setGiftObtained: setPublicObtained } = useGiftsStore()
+  const { toast } = useToast()
+  const [pulsing, setPulsing] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<null | "toggleActive" | "toggleObtained">(null)
 
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -66,6 +79,71 @@ export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
               {gift.categoria}
             </Badge>
             <span className="text-xs sm:text-sm text-muted-foreground">{gift.precoEstimado}</span>
+            {isAdminLoggedIn && (
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant={gift.ativo === false ? "destructive" : "ghost"}
+                  size="sm"
+                  className={
+                    `${gift.ativo === false ? "ring-2 ring-destructive/40 border border-destructive text-destructive" : ""} ${pulsing && confirmAction === 'toggleActive' ? 'animate-pulse' : ''}`
+                  }
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setConfirmAction("toggleActive")
+                    setConfirmOpen(true)
+                  }}
+                >
+                  {gift.ativo === false ? "Ativar" : "Desativar"}
+                </Button>
+                <Button
+                  variant={gift.status === "obtido" ? "default" : "outline"}
+                  size="sm"
+                  className={`${gift.status === "obtido" ? "ring-2 ring-green-300 bg-green-600 text-white" : ""} ${pulsing && confirmAction === 'toggleObtained' ? 'animate-pulse' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setConfirmAction("toggleObtained")
+                    setConfirmOpen(true)
+                  }}
+                >
+                  {gift.status === "obtido" ? "Obtido" : "Marcar obtido"}
+                </Button>
+                {confirmAction && (
+                  <>
+                    <ConfirmDialog
+                      open={confirmOpen}
+                      title={confirmAction === "toggleActive" ? (gift.ativo === false ? "Ativar presente" : "Desativar presente") : gift.status === "obtido" ? "Marcar como não obtido" : "Marcar como obtido"}
+                      description={confirmAction === "toggleActive" ? `Tem certeza que deseja ${gift.ativo === false ? 'ativar' : 'desativar'} o presente '${gift.nome}'?` : `Tem certeza que deseja ${gift.status === 'obtido' ? 'remover de obtidos' : 'marcar como obtido'} o presente '${gift.nome}'?`}
+                      confirmText="Sim"
+                      cancelText="Cancelar"
+                      onCancel={() => {
+                        setConfirmOpen(false)
+                        setConfirmAction(null)
+                      }}
+                      onConfirm={() => {
+                        setConfirmOpen(false)
+                        if (confirmAction === "toggleActive") {
+                          const newState = gift.ativo === false ? true : false
+                          setAdminVisibility(gift.id, newState)
+                          setPublicVisibility(gift.id, newState)
+                          setPulsing(true)
+                          setTimeout(() => setPulsing(false), 700)
+                          toast({ title: newState ? "Item ativado" : "Item desativado", description: `${gift.nome} ${newState ? 'ativado' : 'desativado'} com sucesso.` })
+                        }
+                        if (confirmAction === "toggleObtained") {
+                          const willBeObtained = gift.status !== "obtido"
+                          setAdminObtained(gift.id, willBeObtained)
+                          setPublicObtained(gift.id, willBeObtained)
+                          setPulsing(true)
+                          setTimeout(() => setPulsing(false), 700)
+                          toast({ title: willBeObtained ? "Item marcado como obtido" : "Item desmarcado", description: willBeObtained ? `${gift.nome} marcado como obtido.` : `${gift.nome} removido de obtidos.` })
+                        }
+                        setConfirmAction(null)
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {isComprado ? (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import type { Gift } from "@/data/gifts"
 import { findGuest } from "@/data/guests"
@@ -11,6 +11,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { GiftIcon, CreditCard, Check, Copy, AlertCircle } from "lucide-react"
+import { useAuthStore } from "@/hooks/use-auth-store"
+import { useAdminStore } from "@/hooks/use-admin-store"
+import { useGiftsStore } from "@/hooks/use-gifts-store"
+import { useToast } from "@/hooks/use-toast"
 
 interface GiftModalProps {
   gift: Gift | null
@@ -35,6 +39,16 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const [showSuccess, setShowSuccess] = useState(false)
   const [copied, setCopied] = useState(false)
   const [errors, setErrors] = useState<{ nome?: string; telefone?: string; guestNotFound?: boolean }>({})
+  const [imageUrlInput, setImageUrlInput] = useState("")
+
+  const { isAdminLoggedIn } = useAuthStore()
+  const { updateGiftImage: updateAdminGiftImage } = useAdminStore()
+  const { updateGiftImage: updatePublicGiftImage } = useGiftsStore()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    setImageUrlInput(gift?.imageUrl || "")
+  }, [gift])
 
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, "")
@@ -145,6 +159,57 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
             )}
 
             <div className="space-y-4">
+              {isAdminLoggedIn && (
+                <div className="p-4 border rounded-md bg-secondary space-y-3">
+                  <Label htmlFor="admin-image">Editar imagem (Admin)</Label>
+                  <Input
+                    id="admin-image"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="Cole o endereço da imagem (https://...)"
+                  />
+                  {imageUrlInput ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 h-20 relative rounded overflow-hidden">
+                        <Image src={imageUrlInput} alt="preview" fill className="object-contain" unoptimized />
+                      </div>
+                      <div className="flex gap-2 ml-auto">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            // reset input to current gift image (cancel) and close modal
+                            setImageUrlInput(gift.imageUrl || "")
+                            onClose()
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const url = imageUrlInput.trim()
+                            if (!url) return
+                            if (!/^https?:\/\//.test(url)) {
+                              alert("Insira um endereço válido começando com http:// ou https://")
+                              return
+                            }
+                            try {
+                              updateAdminGiftImage(gift.id, url)
+                              // also update public store so change is visible without reload
+                              updatePublicGiftImage(gift.id, url)
+                              toast({ title: "Imagem atualizada", description: "A imagem foi alterada com sucesso." })
+                            } finally {
+                              setImageUrlInput(url)
+                              onClose()
+                            }
+                          }}
+                        >
+                          Aplicar imagem
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )}
               <div>
                 <Label htmlFor="nome">Seu Nome Completo *</Label>
                 <Input

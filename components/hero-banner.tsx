@@ -46,7 +46,7 @@ export function HeroBanner() {
         <div className="mt-16 space-y-2 text-muted-foreground">
           <p className="text-sm uppercase tracking-widest">Cerimônia</p>
           <p className="text-lg">Igreja Santa Maria Goretti</p>
-          <p className="text-sm mt-4 uppercase tracking-widest">Festa</p>
+          <p className="text-sm mt-4 uppercase tracking-widest">Recepção</p>
           <p className="text-lg">Chácara Bela vista - Sarandi</p>
         </div>
         {isAdminLoggedIn && (
@@ -62,6 +62,8 @@ export function HeroBanner() {
             </Button>
           </div>
         )}
+
+        {/* Admin image-edit moved to Gift Modal; removed inline admin dialog to avoid event bubbling */}
       </div>
     </section>
   )
