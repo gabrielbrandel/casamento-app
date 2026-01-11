@@ -33,6 +33,21 @@ export function useGiftsStore() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(initialGifts))
     }
     setIsLoading(false)
+    const handleExternalUpdate = () => {
+      const s = localStorage.getItem(STORAGE_KEY)
+      if (s) {
+        try {
+          setGifts(JSON.parse(s))
+        } catch {}
+      }
+    }
+
+    window.addEventListener("wedding-gifts-updated", handleExternalUpdate)
+    window.addEventListener("storage", handleExternalUpdate)
+    return () => {
+      window.removeEventListener("wedding-gifts-updated", handleExternalUpdate)
+      window.removeEventListener("storage", handleExternalUpdate)
+    }
   }, [])
 
   const purchaseGift = useCallback((giftId: string, purchase: Omit<GiftPurchase, "giftId">) => {
@@ -54,6 +69,10 @@ export function useGiftsStore() {
           : gift,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      // notify other hook instances in this window
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -70,6 +89,9 @@ export function useGiftsStore() {
           : gift,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -78,6 +100,9 @@ export function useGiftsStore() {
     setGifts((prev) => {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -86,6 +111,9 @@ export function useGiftsStore() {
     setGifts((prev) => {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -96,6 +124,9 @@ export function useGiftsStore() {
         gift.id === giftId ? { ...gift, status: obtained ? ("obtido" as const) : "disponivel" } : gift,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -104,6 +135,9 @@ export function useGiftsStore() {
     setGifts((prev) => {
       const updated = [...prev, gift]
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])

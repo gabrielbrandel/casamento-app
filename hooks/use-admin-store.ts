@@ -21,6 +21,21 @@ export function useAdminStore() {
       setGifts(initialGifts)
     }
     setIsLoading(false)
+    const handleExternalUpdate = () => {
+      const s = localStorage.getItem(STORAGE_KEY)
+      if (s) {
+        try {
+          setGifts(JSON.parse(s))
+        } catch {}
+      }
+    }
+
+    window.addEventListener("wedding-gifts-updated", handleExternalUpdate)
+    window.addEventListener("storage", handleExternalUpdate)
+    return () => {
+      window.removeEventListener("wedding-gifts-updated", handleExternalUpdate)
+      window.removeEventListener("storage", handleExternalUpdate)
+    }
   }, [])
 
   const markAsReceived = useCallback((giftId: string, received: boolean) => {
@@ -37,6 +52,9 @@ export function useAdminStore() {
           : gift,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -45,6 +63,9 @@ export function useAdminStore() {
     setGifts((prev) => {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -53,6 +74,9 @@ export function useAdminStore() {
     setGifts((prev) => {
       const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -63,6 +87,9 @@ export function useAdminStore() {
         gift.id === giftId ? { ...gift, status: obtained ? ("obtido" as const) : "disponivel" } : gift,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
@@ -71,6 +98,9 @@ export function useAdminStore() {
     setGifts((prev) => {
       const updated = [gift, ...prev]
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      try {
+        window.dispatchEvent(new Event("wedding-gifts-updated"))
+      } catch {}
       return updated
     })
   }, [])
