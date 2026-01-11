@@ -20,7 +20,12 @@ let pgPool: any = null
 async function getPgPool() {
   if (!pgPool) {
     const { Pool } = await import("pg")
-    pgPool = new Pool({ connectionString: process.env.DATABASE_URL })
+      pgPool = new Pool({
+          connectionString: process.env.DATABASE_URL,
+          max: 1,
+          ssl: { rejectUnauthorized: false },
+      })
+
     // create table if not exists
     await pgPool.query(`
       CREATE TABLE IF NOT EXISTS gifts (
