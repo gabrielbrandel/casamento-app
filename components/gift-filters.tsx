@@ -16,6 +16,7 @@ interface GiftFiltersProps {
   onStatusChange: (value: string) => void
   sortOrder?: string
   onSortChange?: (value: string) => void
+  isAdmin?: boolean
 }
 
 export function GiftFilters({
@@ -29,6 +30,7 @@ export function GiftFilters({
   onStatusChange,
   sortOrder,
   onSortChange,
+  isAdmin = false,
 }: GiftFiltersProps) {
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -74,8 +76,8 @@ export function GiftFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="disponivel">Disponíveis</SelectItem>
-          <SelectItem value="comprado">Comprados</SelectItem>
-          <SelectItem value="todos">Todos</SelectItem>
+          {isAdmin && <SelectItem value="comprado">Comprados</SelectItem>}
+          {isAdmin && <SelectItem value="todos">Todos</SelectItem>}
         </SelectContent>
       </Select>
 

@@ -214,6 +214,7 @@ export function GiftList() {
           onStatusChange={setStatus}
           sortOrder={sortOrder}
           onSortChange={setSortOrder}
+          isAdmin={isAdminLoggedIn}
         />
 
         {isLoading ? (

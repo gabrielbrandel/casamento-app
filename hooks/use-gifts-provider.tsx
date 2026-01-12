@@ -20,7 +20,13 @@ export function GiftsProvider({ children }: { children: ReactNode }) {
 
   const loadGifts = useCallback(async () => {
     try {
-      const res = await fetch("/api/gifts", { cache: 'no-store' })
+      const res = await fetch("/api/gifts", { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
       if (res.ok) {
         const data = await res.json()
         setGifts(data)
