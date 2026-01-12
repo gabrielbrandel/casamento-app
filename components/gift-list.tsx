@@ -40,11 +40,15 @@ export function GiftList() {
 
     const priceNum = parsePrice(newPreco)
     const faixa: "baixo" | "medio" | "alto" = priceNum <= 100 ? "baixo" : priceNum <= 1000 ? "medio" : "alto"
+    
+    // Format price as R$ currency
+    const formattedPrice = `R$ ${priceNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    
     const gift: Gift = {
       id: Date.now().toString(),
       nome: newNome.trim(),
       categoria: newCategoria.trim() || "Outros",
-      precoEstimado: newPreco.trim(),
+      precoEstimado: formattedPrice,
       faixaPreco: faixa,
       imageUrl: newImage.trim() || "/placeholder.svg",
       status: "disponivel",

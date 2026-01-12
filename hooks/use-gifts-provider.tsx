@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react"
 import { type Gift, initialGifts } from "@/data/gifts"
 
 const STORAGE_KEY = "wedding-gifts-thais-gabriel"
@@ -9,6 +9,7 @@ interface GiftsContextType {
   gifts: Gift[]
   isLoading: boolean
   upsertGift: (gift: Partial<Gift> & { id: string }) => void
+  refreshGifts: () => Promise<void>
 }
 
 const GiftsContext = createContext<GiftsContextType | undefined>(undefined)
@@ -17,29 +18,52 @@ export function GiftsProvider({ children }: { children: ReactNode }) {
   const [gifts, setGifts] = useState<Gift[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load gifts from API once on mount
-  useEffect(() => {
-    const loadGifts = async () => {
-      try {
-        const res = await fetch("/api/gifts")
-        if (res.ok) {
-          const data = await res.json()
-          setGifts(data)
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-        } else {
-          const stored = localStorage.getItem(STORAGE_KEY)
-          setGifts(stored ? JSON.parse(stored) : initialGifts)
-        }
-      } catch {
+  const loadGifts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/gifts", { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setGifts(data)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+      } else {
         const stored = localStorage.getItem(STORAGE_KEY)
         setGifts(stored ? JSON.parse(stored) : initialGifts)
-      } finally {
-        setIsLoading(false)
+      }
+    } catch {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      setGifts(stored ? JSON.parse(stored) : initialGifts)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // Load gifts from API on mount
+  useEffect(() => {
+    loadGifts()
+  }, [loadGifts])
+
+  // Refresh data every 30 seconds when tab is visible
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadGifts()
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [loadGifts])
+
+  // Refresh when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadGifts()
       }
     }
 
-    loadGifts()
-  }, [])
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [loadGifts])
 
   const upsertGift = (updatedGift: Partial<Gift> & { id: string }) => {
     setGifts((prev) => {
@@ -81,7 +105,7 @@ export function GiftsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <GiftsContext.Provider value={{ gifts, isLoading, upsertGift }}>
+    <GiftsContext.Provider value={{ gifts, isLoading, upsertGift, refreshGifts: loadGifts }}>
       {children}
     </GiftsContext.Provider>
   )
