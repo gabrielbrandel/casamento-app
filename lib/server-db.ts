@@ -46,14 +46,21 @@ async function getPgPool() {
         throw new Error('POSTGRES_URL not configured')
       }
       
+      // Configure SSL - Supabase requires SSL but may have self-signed certificates
+      let sslConfig: any = false
+      if (connectionString.includes('sslmode=require') || connectionString.includes('supabase')) {
+        sslConfig = {
+          rejectUnauthorized: false,
+          checkServerIdentity: () => undefined, // Disable hostname verification
+        }
+      }
+      
       pgPool = new Pool({
         connectionString,
         max: 5,
         connectionTimeoutMillis: 20000,
         idleTimeoutMillis: 30000,
-        ssl: connectionString.includes('sslmode=require') 
-          ? { rejectUnauthorized: false } 
-          : false,
+        ssl: sslConfig,
       })
 
       // create table if not exists
