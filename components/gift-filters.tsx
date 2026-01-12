@@ -33,19 +33,19 @@ export function GiftFilters({
   isAdmin = false,
 }: GiftFiltersProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-4 mb-8">
+    <div className="flex flex-col md:flex-row gap-3 mb-8">
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <Input
           placeholder="Buscar presente..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
+          className="pl-11 h-12 text-base md:h-10 md:text-sm"
         />
       </div>
 
       <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-full md:w-[180px]">
+        <SelectTrigger className="w-full md:w-[180px] h-12 text-base md:h-10 md:text-sm">
           <SelectValue placeholder="Categoria" />
         </SelectTrigger>
         <SelectContent>
@@ -58,7 +58,7 @@ export function GiftFilters({
       </Select>
 
       <Select value={priceRange} onValueChange={onPriceRangeChange}>
-        <SelectTrigger className="w-full md:w-[180px]">
+        <SelectTrigger className="w-full md:w-[180px] h-12 text-base md:h-10 md:text-sm">
           <SelectValue placeholder="Faixa de preço" />
         </SelectTrigger>
         <SelectContent>
@@ -71,7 +71,7 @@ export function GiftFilters({
       </Select>
 
       <Select value={status} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-full md:w-[180px]">
+        <SelectTrigger className="w-full md:w-[180px] h-12 text-base md:h-10 md:text-sm">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -83,7 +83,7 @@ export function GiftFilters({
 
       {onSortChange && (
         <Select value={sortOrder} onValueChange={onSortChange}>
-          <SelectTrigger className="w-full md:w-[200px]">
+          <SelectTrigger className="w-full md:w-[200px] h-12 text-base md:h-10 md:text-sm">
             <SelectValue placeholder="Ordenar" />
           </SelectTrigger>
           <SelectContent>

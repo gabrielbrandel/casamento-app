@@ -18,22 +18,37 @@ export function GiftsProvider({ children }: { children: ReactNode }) {
 
   const loadGifts = useCallback(async () => {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 segundos timeout
+      
       const res = await fetch("/api/gifts", { 
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache'
-        }
+        },
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
+      
       if (res.ok) {
         const data = await res.json()
         setGifts(data)
       } else {
-        console.error('Failed to load gifts from API:', res.status)
+        console.error('Failed to load gifts from API:', res.status, res.statusText)
         setGifts([])
       }
     } catch (error) {
-      console.error('Error loading gifts:', error)
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.error('Request timeout loading gifts')
+        } else {
+          console.error('Error loading gifts:', error.message)
+        }
+      } else {
+        console.error('Error loading gifts:', error)
+      }
       setGifts([])
     } finally {
       setIsLoading(false)

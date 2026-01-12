@@ -37,32 +37,44 @@ function isPostgres() {
 let pgPool: any = null
 async function getPgPool() {
   if (!pgPool) {
-    const { Pool } = await import("pg")
+    try {
+      const { Pool } = await import("pg")
       const connectionString = getDbUrl()
+      
+      if (!connectionString) {
+        console.error('No database connection string found in environment variables')
+        throw new Error('POSTGRES_URL not configured')
+      }
+      
       pgPool = new Pool({
-          connectionString,
-          max: 1,
-          connectionTimeoutMillis: 12000,
-          idleTimeoutMillis: 10000,
-          ssl: connectionString.includes('sslmode=require') 
-            ? { rejectUnauthorized: false } 
-            : false,
+        connectionString,
+        max: 5,
+        connectionTimeoutMillis: 20000,
+        idleTimeoutMillis: 30000,
+        ssl: connectionString.includes('sslmode=require') 
+          ? { rejectUnauthorized: false } 
+          : false,
       })
 
-// create table if not existse
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS gifts (
-        id TEXT PRIMARY KEY,
-        nome TEXT,
-        categoria TEXT,
-        precoEstimado TEXT,
-        faixaPreco TEXT,
-        imageUrl TEXT,
-        ativo BOOLEAN,
-        status TEXT,
-        compradoPor JSONB
-      );
-    `)
+      // create table if not exists
+      await pgPool.query(`
+        CREATE TABLE IF NOT EXISTS gifts (
+          id TEXT PRIMARY KEY,
+          nome TEXT,
+          categoria TEXT,
+          precoEstimado TEXT,
+          faixaPreco TEXT,
+          imageUrl TEXT,
+          ativo BOOLEAN,
+          status TEXT,
+          compradoPor JSONB
+        );
+      `)
+    } catch (error) {
+      console.error('Error initializing database pool:', error)
+      pgPool = null
+      throw error
+    }
   }
   return pgPool
 }
@@ -82,15 +94,20 @@ function normalizeGift(row: any): any {
 }
 
 export async function getAllGifts() {
-  if (isPostgres()) {
-    const pool = await getPgPool()
-    const res = await pool.query("SELECT * FROM gifts ORDER BY nome")
-    return res.rows.map((r: any) => normalizeGift(r))
-  }
+  try {
+    if (isPostgres()) {
+      const pool = await getPgPool()
+      const res = await pool.query("SELECT * FROM gifts ORDER BY nome")
+      return res.rows.map((r: any) => normalizeGift(r))
+    }
 
-  await ensureLocalDb()
-  const raw = await fs.promises.readFile(LOCAL_DB, "utf-8")
-  return JSON.parse(raw)
+    await ensureLocalDb()
+    const raw = await fs.promises.readFile(LOCAL_DB, "utf-8")
+    return JSON.parse(raw)
+  } catch (error) {
+    console.error('Error in getAllGifts:', error)
+    return []
+  }
 }
 
 export async function upsertGift(gift: any) {

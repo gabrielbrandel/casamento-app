@@ -25,7 +25,7 @@ interface GiftModalProps {
     familia: string
     telefone: string
     mensagem?: string
-    tipoPagamento: "fisico" | "pix"
+    tipoPagamento: "fisico" | "pix" | "cartao"
   }) => void
 }
 
@@ -35,7 +35,9 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const [nome, setNome] = useState("")
   const [telefone, setTelefone] = useState("")
   const [mensagem, setMensagem] = useState("")
-  const [tipoPagamento, setTipoPagamento] = useState<"fisico" | "pix">("fisico")
+  const [tipoPagamento, setTipoPagamento] = useState<"fisico" | "pix" | "cartao">("fisico")
+  const [contribuirDinheiro, setContribuirDinheiro] = useState(false)
+  const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao">("pix")
   const [showSuccess, setShowSuccess] = useState(false)
   const [copied, setCopied] = useState(false)
   const [errors, setErrors] = useState<{ nome?: string; telefone?: string; guestNotFound?: boolean }>({})
@@ -80,12 +82,14 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       return
     }
 
+    const finalTipoPagamento = contribuirDinheiro ? metodoPagamento : "fisico"
+    
     onConfirm({
       nome: guest.nome,
       familia: guest.familia,
       telefone: telefone.replace(/\D/g, ""),
       mensagem: mensagem.trim() || undefined,
-      tipoPagamento,
+      tipoPagamento: finalTipoPagamento,
     })
 
     setShowSuccess(true)
@@ -95,6 +99,8 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       setTelefone("")
       setMensagem("")
       setTipoPagamento("fisico")
+      setContribuirDinheiro(false)
+      setMetodoPagamento("pix")
       setErrors({})
       onClose()
     }, 1600)
@@ -311,34 +317,109 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                 <Textarea id="mensagem" value={mensagem} onChange={(e) => setMensagem(e.target.value)} rows={3} />
               </div>
 
-              <div>
-                <Label>Como deseja presentear?</Label>
-                <RadioGroup value={tipoPagamento} onValueChange={(v) => setTipoPagamento(v as "fisico" | "pix")} className="mt-2">
-                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <RadioGroupItem value="fisico" id="fisico" />
-                    <Label htmlFor="fisico" className="flex items-center gap-2 flex-1 cursor-pointer">
-                      <GiftIcon className="w-4 h-4" /> Vou dar o presente físico
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center gap-2 flex-1 cursor-pointer">
-                      <CreditCard className="w-4 h-4" /> Vou contribuir via Pix
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {tipoPagamento === "pix" && (
-                <div className="p-4 bg-secondary rounded-lg space-y-3">
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 p-2 bg-background rounded text-sm break-all">{PIX_KEY}</code>
-                    <Button variant="outline" size="icon" onClick={copyPixKey}>
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
+              <div className="space-y-4">
+                <Label className="text-base">Como deseja presentear?</Label>
+                
+                {/* Opção: Presente Físico */}
+                <div className="flex items-start space-x-3 p-4 border-2 rounded-lg hover:border-primary/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="fisico"
+                    checked={!contribuirDinheiro}
+                    onChange={(e) => {
+                      setContribuirDinheiro(!e.target.checked)
+                    }}
+                    className="mt-1 h-5 w-5 rounded border-gray-300 cursor-pointer"
+                  />
+                  <Label htmlFor="fisico" className="flex items-start gap-3 flex-1 cursor-pointer">
+                    <GiftIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                    <span className="text-base">Vou comprar o presente físico e entregar aos noivos.</span>
+                  </Label>
                 </div>
-              )}
+
+                {/* Opção: Contribuir em Dinheiro */}
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3 p-4 border-2 rounded-lg hover:border-primary/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id="dinheiro"
+                      checked={contribuirDinheiro}
+                      onChange={(e) => setContribuirDinheiro(e.target.checked)}
+                      className="mt-1 h-5 w-5 rounded border-gray-300 cursor-pointer"
+                    />
+                    <Label htmlFor="dinheiro" className="flex items-start gap-3 flex-1 cursor-pointer">
+                      <CreditCard className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                      <span className="text-base">Vou contribuir em dinheiro</span>
+                    </Label>
+                  </div>
+
+                  {/* Sub-opções quando contribuir em dinheiro */}
+                  {contribuirDinheiro && (
+                    <div className="ml-8 space-y-3 animate-in slide-in-from-top-2">
+                      <div
+                        onClick={() => setMetodoPagamento("cartao")}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          metodoPagamento === "cartao" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/30"
+                        }`}
+                      >
+                        <div className="flex-shrink-0">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                            <path d="M2 10L22 10" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Pagar com Cartão de Crédito</p>
+                          <p className="text-sm text-muted-foreground">Parcelamento disponível</p>
+                        </div>
+                        {metodoPagamento === "cartao" && (
+                          <Check className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+
+                      <div
+                        onClick={() => setMetodoPagamento("pix")}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          metodoPagamento === "pix" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/30"
+                        }`}
+                      >
+                        <div className="flex-shrink-0">
+                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.007 1.5l4.29 4.29 2.79-2.79 1.42 1.42-2.79 2.79 4.29 4.29-1.42 1.42-4.29-4.29-2.79 2.79-1.42-1.42 2.79-2.79-4.29-4.29 1.42-1.42zm-6 6l2.79 2.79-4.29 4.29 1.42 1.42 4.29-4.29 2.79 2.79 1.42-1.42-2.79-2.79 4.29-4.29-1.42-1.42-4.29 4.29-2.79-2.79-1.42 1.42zm13.54 7.96l-4.29 4.29 2.79 2.79-1.42 1.42-2.79-2.79-4.29 4.29-1.42-1.42 4.29-4.29-2.79-2.79 1.42-1.42 2.79 2.79 4.29-4.29 1.42 1.42z"/>
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Pagar com Pix</p>
+                          <p className="text-sm text-muted-foreground">Transferência instantânea</p>
+                        </div>
+                        {metodoPagamento === "pix" && (
+                          <Check className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+
+                      {/* Mostra chave PIX */}
+                      {metodoPagamento === "pix" && (
+                        <div className="p-4 bg-secondary rounded-lg space-y-3 animate-in slide-in-from-top-2">
+                          <p className="text-sm font-medium">Chave Pix:</p>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 p-3 bg-background rounded text-sm break-all font-mono">{PIX_KEY}</code>
+                            <Button variant="outline" size="icon" onClick={copyPixKey}>
+                              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Placeholder para integração com cartão */}
+                      {metodoPagamento === "cartao" && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg animate-in slide-in-from-top-2">
+                          <p className="text-sm text-blue-900">🔄 Integração com gateway de pagamento em breve</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <Button onClick={handleSubmit} className="w-full" size="lg">
                 Confirmar Presente
