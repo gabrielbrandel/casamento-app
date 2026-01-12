@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server"
 import { getAllGifts, getDbUrl, getDbUrlSource } from "@/lib/server-db"
 
+// Disable TLS verification for Supabase
+if (process.env.POSTGRES_URL?.includes("supabase")) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+}
+
 export const runtime = "nodejs"
 
 export async function GET() {
@@ -21,16 +26,32 @@ export async function GET() {
     if (isConfigured) {
       try {
         const { Pool } = await import("pg")
-        const pool = new Pool({
-          connectionString: dbUrl,
+        let connString = dbUrl
+        
+        let pool = new Pool({
+          connectionString: connString,
           connectionTimeoutMillis: 10000,
-          ssl: dbUrl.includes("supabase")
-            ? {
-                rejectUnauthorized: false,
-                checkServerIdentity: () => undefined,
-              }
-            : false,
+          ssl: {
+            rejectUnauthorized: false,
+            checkServerIdentity: () => undefined,
+          },
         })
+
+        try {
+          // Test connection
+          await pool.query("SELECT 1")
+        } catch (err) {
+          console.error("SSL connection failed, retrying without SSL")
+          await pool.end()
+          
+          // Retry without SSL
+          connString = connString.replace("?sslmode=require", "").replace("&sslmode=require", "")
+          pool = new Pool({
+            connectionString: connString,
+            connectionTimeoutMillis: 10000,
+            ssl: false,
+          })
+        }
 
         // Check if table exists
         const tableRes = await pool.query(

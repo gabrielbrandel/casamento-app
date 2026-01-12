@@ -1,6 +1,11 @@
 import fs from "fs"
 import path from "path"
 
+// Disable TLS verification for Supabase self-signed certificates
+if (process.env.NODE_ENV === "production" && process.env.POSTGRES_URL?.includes("supabase")) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+}
+
 const LOCAL_DB = path.resolve(process.cwd(), "data", "local-db.json")
 
 async function ensureLocalDb() {
@@ -39,7 +44,7 @@ async function getPgPool() {
   if (!pgPool) {
     try {
       const { Pool } = await import("pg")
-      const connectionString = getDbUrl()
+      let connectionString = getDbUrl()
       
       if (!connectionString) {
         console.error('No database connection string found in environment variables')
@@ -51,7 +56,7 @@ async function getPgPool() {
       if (connectionString.includes('sslmode=require') || connectionString.includes('supabase')) {
         sslConfig = {
           rejectUnauthorized: false,
-          checkServerIdentity: () => undefined, // Disable hostname verification
+          checkServerIdentity: () => undefined,
         }
       }
       
@@ -62,6 +67,27 @@ async function getPgPool() {
         idleTimeoutMillis: 30000,
         ssl: sslConfig,
       })
+      
+      // Test connection
+      try {
+        await pgPool.query("SELECT 1")
+        console.log("Database connection successful")
+      } catch (connError) {
+        console.error("Connection test failed, retrying without sslmode:", connError instanceof Error ? connError.message : connError)
+        // Close failed pool
+        await pgPool.end()
+        pgPool = null
+        
+        // Retry without sslmode
+        connectionString = connectionString.replace("?sslmode=require", "").replace("&sslmode=require", "")
+        pgPool = new Pool({
+          connectionString,
+          max: 5,
+          connectionTimeoutMillis: 20000,
+          idleTimeoutMillis: 30000,
+          ssl: false,
+        })
+      }
 
       // create table if not exists
       await pgPool.query(`
