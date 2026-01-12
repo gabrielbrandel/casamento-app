@@ -3,6 +3,21 @@ import { replaceAllGifts } from "@/lib/server-db"
 import { initialGifts } from "@/data/gifts"
 
 export async function POST() {
-  const res = await replaceAllGifts(initialGifts)
-  return NextResponse.json({ ok: true, count: res.length })
+  try {
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        { ok: false, error: "DATABASE_URL ausente no ambiente do Vercel" },
+        { status: 500 },
+      )
+    }
+
+    const res = await replaceAllGifts(initialGifts)
+    return NextResponse.json({ ok: true, count: res.length })
+  } catch (err: any) {
+    console.error("Seed failed", err)
+    return NextResponse.json(
+      { ok: false, error: err?.message ?? "Erro ao executar seed" },
+      { status: 500 },
+    )
+  }
 }
