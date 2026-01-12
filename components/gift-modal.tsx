@@ -67,7 +67,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors: { nome?: string; telefone?: string; guestNotFound?: boolean } = {}
     if (!nome.trim()) newErrors.nome = "Nome é obrigatório"
     if (!telefone.trim()) newErrors.telefone = "Telefone é obrigatório"
@@ -84,6 +84,52 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
     const finalTipoPagamento = contribuirDinheiro ? metodoPagamento : "fisico"
     
+    // Se for pagamento online (Pix ou Cartão), redireciona para PagSeguro
+    if (finalTipoPagamento === "pix" || finalTipoPagamento === "cartao") {
+      try {
+        const priceText = gift?.precoEstimado || "R$ 0,00"
+        const amount = parseFloat(priceText.replace(/[^\d,]/g, "").replace(",", "."))
+
+        const response = await fetch("/api/payment/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            giftId: gift?.id,
+            giftName: gift?.nome,
+            amount,
+            buyerName: guest.nome,
+            buyerEmail: "gabrielbrandel@gmail.com", // Email fixo ou solicitar do convidado
+            paymentMethod: finalTipoPagamento,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok || !data.success) {
+          toast({
+            variant: "destructive",
+            title: "Erro ao processar pagamento",
+            description: data.error || "Tente novamente mais tarde",
+          })
+          return
+        }
+
+        // Redireciona para checkout do PagSeguro
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl
+          return
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao processar pagamento",
+          description: "Não foi possível conectar ao gateway de pagamento",
+        })
+        return
+      }
+    }
+
+    // Fluxo normal apenas para presente físico
     onConfirm({
       nome: guest.nome,
       familia: guest.familia,
@@ -377,43 +423,50 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                         )}
                       </div>
 
-                      <div
-                        onClick={() => setMetodoPagamento("pix")}
-                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          metodoPagamento === "pix" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/30"
-                        }`}
-                      >
-                        <div className="flex-shrink-0">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12.007 1.5l4.29 4.29 2.79-2.79 1.42 1.42-2.79 2.79 4.29 4.29-1.42 1.42-4.29-4.29-2.79 2.79-1.42-1.42 2.79-2.79-4.29-4.29 1.42-1.42zm-6 6l2.79 2.79-4.29 4.29 1.42 1.42 4.29-4.29 2.79 2.79 1.42-1.42-2.79-2.79 4.29-4.29-1.42-1.42-4.29 4.29-2.79-2.79-1.42 1.42zm13.54 7.96l-4.29 4.29 2.79 2.79-1.42 1.42-2.79-2.79-4.29 4.29-1.42-1.42 4.29-4.29-2.79-2.79 1.42-1.42 2.79 2.79 4.29-4.29 1.42 1.42z"/>
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">Pagar com Pix</p>
-                          <p className="text-sm text-muted-foreground">Transferência instantânea</p>
-                        </div>
-                        {metodoPagamento === "pix" && (
-                          <Check className="w-5 h-5 text-primary" />
-                        )}
-                      </div>
-
-                      {/* Mostra chave PIX */}
-                      {metodoPagamento === "pix" && (
-                        <div className="p-4 bg-secondary rounded-lg space-y-3 animate-in slide-in-from-top-2">
-                          <p className="text-sm font-medium">Chave Pix:</p>
-                          <div className="flex items-center gap-2">
-                            <code className="flex-1 p-3 bg-background rounded text-sm break-all font-mono">{PIX_KEY}</code>
-                            <Button variant="outline" size="icon" onClick={copyPixKey}>
-                              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            </Button>
+                        <div
+                          onClick={() => setMetodoPagamento("pix")}
+                          className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${metodoPagamento === "pix"
+                              ? "border-primary bg-primary/5"
+                              : "border-gray-200 hover:border-primary/30"
+                            }`}
+                        >
+                          {/* Ícone Pix via base64 */}
+                          <div className="flex-shrink-0">
+                            <img
+                              src="data:image/png;base64,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"
+                              alt="Pix"
+                              className="w-8 h-8 object-contain"
+                            />
                           </div>
+
+                          {/* Texto */}
+                          <div className="flex-1">
+                            <p className="font-medium">Pagar com Pix</p>
+                            <p className="text-sm text-muted-foreground">
+                              Transferência instantânea
+                            </p>
+                          </div>
+
+                          {/* Check */}
+                          {metodoPagamento === "pix" && (
+                            <Check className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
+
+
+                      {/* Mensagem de redirecionamento */}
+                      {metodoPagamento === "pix" && (
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg animate-in slide-in-from-top-2">
+                          <p className="text-sm text-green-900 font-medium">✅ Você será redirecionado ao checkout seguro do PagSeguro</p>
+                          <p className="text-xs text-green-700 mt-1">Gere o QR Code Pix na tela de pagamento</p>
                         </div>
                       )}
 
-                      {/* Placeholder para integração com cartão */}
+                      {/* Mensagem de redirecionamento para cartão */}
                       {metodoPagamento === "cartao" && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg animate-in slide-in-from-top-2">
-                          <p className="text-sm text-blue-900">🔄 Integração com gateway de pagamento em breve</p>
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg animate-in slide-in-from-top-2">
+                          <p className="text-sm text-green-900 font-medium">✅ Você será redirecionado ao checkout seguro do PagSeguro</p>
+                          <p className="text-xs text-green-700 mt-1">Aceita todas as bandeiras de cartão com parcelamento</p>
                         </div>
                       )}
                     </div>
@@ -422,7 +475,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
               </div>
 
               <Button onClick={handleSubmit} className="w-full" size="lg">
-                Confirmar Presente
+                {contribuirDinheiro ? "Ir para Pagamento" : "Confirmar Presente"}
               </Button>
             </div>
           </>
