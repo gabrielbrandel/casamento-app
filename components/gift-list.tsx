@@ -75,6 +75,8 @@ export function GiftList() {
     const base = gifts.filter((gift) => {
       // hide deactivated items (ativo === false)
       if (gift.ativo === false) return false
+      // skip gifts with missing nome
+      if (!gift.nome) return false
       const matchesSearch = gift.nome.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = category === "Todas" || gift.categoria === category
       const matchesPriceRange = priceRange === "todas" || gift.faixaPreco === priceRange

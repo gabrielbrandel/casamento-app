@@ -67,14 +67,25 @@ async function getPgPool() {
   return pgPool
 }
 
+function normalizeGift(row: any): any {
+  return {
+    id: row.id,
+    nome: row.nome,
+    categoria: row.categoria,
+    precoEstimado: row.precoestimado || row.precoEstimado,
+    faixaPreco: row.faixapreco || row.faixaPreco,
+    imageUrl: row.imageurl || row.imageUrl,
+    ativo: row.ativo,
+    status: row.status,
+    compradoPor: row.compradopor || row.compradoPor || null,
+  }
+}
+
 export async function getAllGifts() {
   if (isPostgres()) {
     const pool = await getPgPool()
     const res = await pool.query("SELECT * FROM gifts ORDER BY nome")
-    return res.rows.map((r: any) => ({
-      ...r,
-      compradoPor: r.compradopor || r.compradoPor || null,
-    }))
+    return res.rows.map((r: any) => normalizeGift(r))
   }
 
   await ensureLocalDb()
@@ -85,6 +96,24 @@ export async function getAllGifts() {
 export async function upsertGift(gift: any) {
   if (isPostgres()) {
     const pool = await getPgPool()
+    
+    // Fetch current gift if exists
+    const existing = await pool.query("SELECT * FROM gifts WHERE id = $1", [gift.id])
+    const current = existing.rows[0] ? normalizeGift(existing.rows[0]) : null
+    
+    // Merge with existing data (partial updates)
+    const merged = {
+      id: gift.id,
+      nome: gift.nome !== undefined ? gift.nome : current?.nome,
+      categoria: gift.categoria !== undefined ? gift.categoria : current?.categoria,
+      precoEstimado: gift.precoEstimado !== undefined ? gift.precoEstimado : current?.precoEstimado,
+      faixaPreco: gift.faixaPreco !== undefined ? gift.faixaPreco : current?.faixaPreco,
+      imageUrl: gift.imageUrl !== undefined ? gift.imageUrl : current?.imageUrl,
+      ativo: gift.ativo !== undefined ? gift.ativo : current?.ativo,
+      status: gift.status !== undefined ? gift.status : current?.status,
+      compradoPor: gift.compradoPor !== undefined ? gift.compradoPor : current?.compradoPor,
+    }
+    
     const query = `
       INSERT INTO gifts(id, nome, categoria, precoEstimado, faixaPreco, imageUrl, ativo, status, compradoPor)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
@@ -99,17 +128,17 @@ export async function upsertGift(gift: any) {
         compradoPor=EXCLUDED.compradoPor;
     `
     await pool.query(query, [
-      gift.id,
-      gift.nome,
-      gift.categoria,
-      gift.precoEstimado,
-      gift.faixaPreco,
-      gift.imageUrl,
-      gift.ativo,
-      gift.status,
-      gift.compradoPor ? JSON.stringify(gift.compradoPor) : null,
+      merged.id,
+      merged.nome,
+      merged.categoria,
+      merged.precoEstimado,
+      merged.faixaPreco,
+      merged.imageUrl,
+      merged.ativo,
+      merged.status,
+      merged.compradoPor ? JSON.stringify(merged.compradoPor) : null,
     ])
-    return gift
+    return merged
   }
 
   await ensureLocalDb()
@@ -122,7 +151,7 @@ export async function upsertGift(gift: any) {
     arr.push(gift)
   }
   await fs.promises.writeFile(LOCAL_DB, JSON.stringify(arr, null, 2), "utf-8")
-  return gift
+  return arr[idx >= 0 ? idx : arr.length - 1]
 }
 
 export async function markReceived(giftId: string, received: boolean) {
@@ -132,7 +161,8 @@ export async function markReceived(giftId: string, received: boolean) {
     const comprado = res.rows[0]?.compradopor || res.rows[0]?.compradoPor || null
     const newComprado = comprado ? { ...comprado, recebidoConfirmado: received } : null
     await pool.query("UPDATE gifts SET compradoPor = $1 WHERE id = $2", [newComprado ? JSON.stringify(newComprado) : null, giftId])
-    return { id: giftId, compradoPor: newComprado }
+    const updated = await pool.query("SELECT * FROM gifts WHERE id = $1", [giftId])
+    return normalizeGift(updated.rows[0])
   }
 
   await ensureLocalDb()

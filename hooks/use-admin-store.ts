@@ -1,120 +1,53 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { type Gift, initialGifts } from "@/data/gifts"
-
-const STORAGE_KEY = "wedding-gifts-thais-gabriel"
+import { useCallback } from "react"
+import { type Gift } from "@/data/gifts"
+import { useGiftsContext } from "./use-gifts-provider"
 
 export function useAdminStore() {
-  const [gifts, setGifts] = useState<Gift[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setGifts(JSON.parse(stored))
-      } catch {
-        setGifts(initialGifts)
-      }
-    } else {
-      setGifts(initialGifts)
-    }
-    setIsLoading(false)
-    const handleExternalUpdate = () => {
-      const s = localStorage.getItem(STORAGE_KEY)
-      if (s) {
-        try {
-          setGifts(JSON.parse(s))
-        } catch {}
-      }
-    }
-
-    window.addEventListener("wedding-gifts-updated", handleExternalUpdate)
-    window.addEventListener("storage", handleExternalUpdate)
-    return () => {
-      window.removeEventListener("wedding-gifts-updated", handleExternalUpdate)
-      window.removeEventListener("storage", handleExternalUpdate)
-    }
-  }, [])
+  const { gifts, isLoading, upsertGift } = useGiftsContext()
 
   const markAsReceived = useCallback((giftId: string, received: boolean) => {
-    setGifts((prev) => {
-      const updated = prev.map((gift) =>
-        gift.id === giftId && gift.compradoPor
-          ? {
-              ...gift,
-              compradoPor: {
-                ...gift.compradoPor,
-                recebidoConfirmado: received,
-              },
-            }
-          : gift,
-      )
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      try {
-        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
-      } catch {}
-      return updated
-    })
-  }, [])
+    const gift = gifts.find((g) => g.id === giftId)
+    if (gift && gift.compradoPor) {
+      upsertGift({
+        id: giftId,
+        compradoPor: {
+          ...gift.compradoPor,
+          recebidoConfirmado: received,
+        },
+      })
+
+      // Also call the specific endpoint
+      fetch(`/api/gifts/receive/${giftId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ received }),
+      }).catch(() => {
+        console.error("Failed to mark as received")
+      })
+    }
+  }, [gifts, upsertGift])
 
   const updateGiftImage = useCallback((giftId: string, imageUrl: string) => {
-    setGifts((prev) => {
-      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, imageUrl } : gift))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      try {
-        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
-      } catch {}
-      return updated
-    })
-  }, [])
+    upsertGift({ id: giftId, imageUrl })
+  }, [upsertGift])
 
   const updateGiftPrice = useCallback((giftId: string, precoEstimado: string, faixaPreco?: "baixo" | "medio" | "alto") => {
-    setGifts((prev) => {
-      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, precoEstimado, faixaPreco: faixaPreco ?? gift.faixaPreco } : gift))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      try {
-        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
-      } catch {}
-      return updated
-    })
-  }, [])
+    upsertGift({ id: giftId, precoEstimado, faixaPreco })
+  }, [upsertGift])
 
   const setGiftVisibility = useCallback((giftId: string, ativo: boolean) => {
-    setGifts((prev) => {
-      const updated = prev.map((gift) => (gift.id === giftId ? { ...gift, ativo } : gift))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      try {
-        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
-      } catch {}
-      return updated
-    })
-  }, [])
+    upsertGift({ id: giftId, ativo })
+  }, [upsertGift])
 
   const setGiftObtained = useCallback((giftId: string, obtained: boolean) => {
-    setGifts((prev) => {
-      const updated = prev.map((gift) =>
-        gift.id === giftId ? { ...gift, status: obtained ? ("obtido" as const) : "disponivel" } : gift,
-      )
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      try {
-        setTimeout(() => window.dispatchEvent(new Event("wedding-gifts-updated")), 0)
-      } catch {}
-      return updated
-    })
-  }, [])
+    upsertGift({ id: giftId, status: obtained ? "obtido" : "disponivel" })
+  }, [upsertGift])
 
   const addGift = useCallback((gift: Gift) => {
-    setGifts((prev) => {
-      const updated = [gift, ...prev]
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-      try {
-        window.dispatchEvent(new Event("wedding-gifts-updated"))
-      } catch {}
-      return updated
-    })
-  }, [])
+    upsertGift(gift)
+  }, [upsertGift])
 
   const getPurchasedGifts = useCallback(
     (filter: "todos" | "fisico" | "pix") => {
@@ -174,7 +107,6 @@ export function useAdminStore() {
       pendentesConferencia: purchased.length - recebidosConfirmados,
     }
   }, [gifts])
-
 
   return {
     gifts,
