@@ -44,7 +44,9 @@ async function getPgPool() {
           max: 1,
           connectionTimeoutMillis: 12000,
           idleTimeoutMillis: 10000,
-          ssl: { rejectUnauthorized: false },
+          ssl: connectionString.includes('sslmode=require') 
+            ? { rejectUnauthorized: false } 
+            : false,
       })
 
 // create table if not existse
