@@ -12,21 +12,42 @@ async function ensureLocalDb() {
   }
 }
 
+export function getDbUrl() {
+  return (
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.DATABASE_URL ||
+    ""
+  )
+}
+
+export function getDbUrlSource() {
+  if (process.env.POSTGRES_URL) return "POSTGRES_URL"
+  if (process.env.POSTGRES_PRISMA_URL) return "POSTGRES_PRISMA_URL"
+  if (process.env.POSTGRES_URL_NON_POOLING) return "POSTGRES_URL_NON_POOLING"
+  if (process.env.DATABASE_URL) return "DATABASE_URL"
+  return ""
+}
+
 function isPostgres() {
-  return Boolean(process.env.DATABASE_URL)
+  return Boolean(getDbUrl())
 }
 
 let pgPool: any = null
 async function getPgPool() {
   if (!pgPool) {
     const { Pool } = await import("pg")
+      const connectionString = getDbUrl()
       pgPool = new Pool({
-          connectionString: process.env.DATABASE_URL,
+          connectionString,
           max: 1,
+          connectionTimeoutMillis: 12000,
+          idleTimeoutMillis: 10000,
           ssl: { rejectUnauthorized: false },
       })
 
-    // create table if not exists
+// create table if not existse
     await pgPool.query(`
       CREATE TABLE IF NOT EXISTS gifts (
         id TEXT PRIMARY KEY,

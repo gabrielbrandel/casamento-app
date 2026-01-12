@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { getAllGifts, upsertGift, replaceAllGifts } from "@/lib/server-db"
 
+export const runtime = "nodejs"
+
 export async function GET() {
   const gifts = await getAllGifts()
   return NextResponse.json(gifts)
