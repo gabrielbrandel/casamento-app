@@ -13,18 +13,17 @@ function PaymentSuccessContent() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          router.push('/')
-          return 0
-        }
-        return prev - 1
-      })
+      setCountdown((prev) => prev - 1)
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [router])
+  }, [])
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      router.push('/')
+    }
+  }, [countdown, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10 p-4">

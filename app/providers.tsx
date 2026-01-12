@@ -3,12 +3,15 @@
 import type React from "react"
 import { GiftsProvider } from "@/hooks/use-gifts-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { TransactionPollerProvider } from "@/components/transaction-poller-provider"
 
 export function RootProviders({ children }: { children: React.ReactNode }) {
   return (
     <GiftsProvider>
-      {children}
-      <Toaster />
+      <TransactionPollerProvider>
+        {children}
+        <Toaster />
+      </TransactionPollerProvider>
     </GiftsProvider>
   )
 }

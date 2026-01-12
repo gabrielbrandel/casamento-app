@@ -5,7 +5,7 @@ export interface Gift {
   precoEstimado: string
   faixaPreco: "baixo" | "medio" | "alto"
   imageUrl: string
-  status: "disponivel" | "comprado" | "obtido"
+  status: "disponivel" | "processando_pagamento" | "comprado" | "obtido"
   ativo?: boolean
   compradoPor?: {
     nome: string

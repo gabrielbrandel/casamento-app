@@ -15,6 +15,7 @@ import { useAuthStore } from "@/hooks/use-auth-store"
 import { useAdminStore } from "@/hooks/use-admin-store"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
 import { useToast } from "@/hooks/use-toast"
+import { startPollingTransaction } from "@/lib/transaction-poller"
 
 interface GiftModalProps {
   gift: Gift | null
@@ -33,14 +34,15 @@ const PIX_KEY = "thais@carvalho.co"
 
 export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) {
   const [nome, setNome] = useState("")
-  const [telefone, setTelefone] = useState("")
+  const [cpf, setCpf] = useState("")
+  const [email, setEmail] = useState("")
   const [mensagem, setMensagem] = useState("")
   const [tipoPagamento, setTipoPagamento] = useState<"fisico" | "pix" | "cartao">("fisico")
   const [contribuirDinheiro, setContribuirDinheiro] = useState(false)
   const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao">("pix")
   const [showSuccess, setShowSuccess] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [errors, setErrors] = useState<{ nome?: string; telefone?: string; guestNotFound?: boolean }>({})
+  const [errors, setErrors] = useState<{ nome?: string; cpf?: string; email?: string }>({})
 
   const [imageUrlInput, setImageUrlInput] = useState("")
   const [priceInput, setPriceInput] = useState("")
@@ -49,7 +51,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
   const { isAdminLoggedIn } = useAuthStore()
   const { updateGiftImage: updateAdminGiftImage, updateGiftPrice: updateAdminGiftPrice } = useAdminStore()
-  const { updateGiftImage: updatePublicGiftImage, updateGiftPrice: updatePublicGiftPrice } = useGiftsStore()
+  const { updateGiftImage: updatePublicGiftImage, updateGiftPrice: updatePublicGiftPrice, setGiftPaymentProcessing } = useGiftsStore()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -61,24 +63,17 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 2) return numbers
-    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`
-    if (numbers.length <= 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
+    if (numbers.length <= 11) return numbers
+    return numbers.slice(0, 11)
   }
 
   const handleSubmit = async () => {
-    const newErrors: { nome?: string; telefone?: string; guestNotFound?: boolean } = {}
+    const newErrors: { nome?: string; cpf?: string; email?: string } = {}
     if (!nome.trim()) newErrors.nome = "Nome é obrigatório"
-    if (!telefone.trim()) newErrors.telefone = "Telefone é obrigatório"
+    if (!cpf.trim()) newErrors.cpf = "CPF é obrigatório"
+    if (!email.trim()) newErrors.email = "Email é obrigatório"
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
-      return
-    }
-
-    const guest = findGuest(nome)
-    if (!guest) {
-      setErrors({ guestNotFound: true })
       return
     }
 
@@ -89,6 +84,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       try {
         const priceText = gift?.precoEstimado || "R$ 0,00"
         const amount = parseFloat(priceText.replace(/[^\d,]/g, "").replace(",", "."))
+        const cleanCpf = cpf.replace(/\D/g, "")
 
         const response = await fetch("/api/payment/create", {
           method: "POST",
@@ -97,8 +93,9 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
             giftId: gift?.id,
             giftName: gift?.nome,
             amount,
-            buyerName: guest.nome,
-            buyerEmail: "gabrielbrandel@gmail.com", // Email fixo ou solicitar do convidado
+            buyerName: nome,
+            buyerEmail: email,
+            buyerCpf: cleanCpf,
             paymentMethod: finalTipoPagamento,
           }),
         })
@@ -108,15 +105,23 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
         if (!response.ok || !data.success) {
           toast({
             variant: "destructive",
-            title: "Erro ao processar pagamento",
+            title: "Erro ao criar pagamento",
             description: data.error || "Tente novamente mais tarde",
           })
           return
         }
 
-        // Redireciona para checkout do PagSeguro
+        // Abre checkout do PagSeguro em nova aba
         if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl
+          // Marca o presente como processando pagamento
+          setGiftPaymentProcessing(gift.id)
+          
+          // Inicia polling para monitorar status da transação
+          if (data.transactionCode) {
+            startPollingTransaction(data.transactionCode)
+          }
+          
+          window.open(data.checkoutUrl, '_blank')
           return
         }
       } catch (error) {
@@ -131,9 +136,9 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
 
     // Fluxo normal apenas para presente físico
     onConfirm({
-      nome: guest.nome,
-      familia: guest.familia,
-      telefone: telefone.replace(/\D/g, ""),
+      nome: nome,
+      familia: "",
+      telefone: cpf.replace(/\D/g, ""),
       mensagem: mensagem.trim() || undefined,
       tipoPagamento: finalTipoPagamento,
     })
@@ -142,7 +147,8 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
     setTimeout(() => {
       setShowSuccess(false)
       setNome("")
-      setTelefone("")
+      setCpf("")
+      setEmail("")
       setMensagem("")
       setTipoPagamento("fisico")
       setContribuirDinheiro(false)
@@ -161,7 +167,8 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const handleClose = () => {
     if (!showSuccess) {
       setNome("")
-      setTelefone("")
+      setCpf("")
+      setEmail("")
       setMensagem("")
       setTipoPagamento("fisico")
       setErrors({})
@@ -201,18 +208,6 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                 </p>
               </div>
             </div>
-
-            {errors.guestNotFound && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-destructive">Nome ou telefone não encontrado</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Seus dados não foram localizados na lista de convidados, favor entrar em contato com os noivos.
-                  </p>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-6">
               {isAdminLoggedIn && (
@@ -336,24 +331,42 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                     value={nome}
                     onChange={(e) => {
                       setNome(e.target.value)
-                      if (errors.nome || errors.guestNotFound)
-                        setErrors({ ...errors, nome: undefined, guestNotFound: false })
+                      if (errors.nome)
+                        setErrors({ ...errors, nome: undefined })
                     }}
                     className={errors.nome ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
               </div>
 
               <div>
-                <Label htmlFor="telefone">Número de Telefone *</Label>
+                <Label htmlFor="cpf">CPF *</Label>
                   <Input
-                    id="telefone"
-                    value={telefone}
+                    id="cpf"
+                    value={cpf}
                     onChange={(e) => {
-                      setTelefone(formatPhone(e.target.value))
-                      if (errors.telefone || errors.guestNotFound)
-                        setErrors({ ...errors, telefone: undefined, guestNotFound: false })
+                      setCpf(formatPhone(e.target.value))
+                      if (errors.cpf)
+                        setErrors({ ...errors, cpf: undefined })
                     }}
-                    className={errors.telefone ? "border-destructive focus-visible:ring-destructive" : ""}
+                    placeholder="Digite seus 11 dígitos"
+                    className={errors.cpf ? "border-destructive focus-visible:ring-destructive" : ""}
+                  />
+
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (errors.email)
+                        setErrors({ ...errors, email: undefined })
+                    }}
+                    placeholder="seu@email.com"
+                    className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
 
               </div>

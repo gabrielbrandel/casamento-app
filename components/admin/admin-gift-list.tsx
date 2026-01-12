@@ -2,24 +2,26 @@
 
 import { useState } from "react"
 import type { Gift } from "@/data/gifts"
-import { Check, Gift as GiftIcon, EyeOff, RotateCcw, Heart } from "lucide-react"
+import { Check, Gift as GiftIcon, EyeOff, RotateCcw, Heart, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAdminStore } from "@/hooks/use-admin-store"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
 import { useToast } from "@/hooks/use-toast"
 import { markReceivedApi } from "@/lib/api-client"
 
-type TabType = "ativos" | "desativados" | "recebidos" | "jatemos"
+type TabType = "ativos" | "desativados" | "processando" | "recebidos" | "jatemos"
 
 export function AdminGiftList() {
   const [tab, setTab] = useState<TabType>("ativos")
+  const [isCheckingPayments, setIsCheckingPayments] = useState(false)
 
   const { gifts, setGiftVisibility, setGiftObtained, markAsReceived } = useAdminStore()
   const { setGiftVisibility: setPublicVisibility, setGiftObtained: setPublicObtained } = useGiftsStore()
   const { toast } = useToast()
 
-  const ativos = gifts.filter((g) => g.ativo !== false && g.status !== "comprado" && g.status !== "obtido")
+  const ativos = gifts.filter((g) => g.ativo !== false && g.status !== "processando_pagamento" && g.status !== "comprado" && g.status !== "obtido")
   const desativados = gifts.filter((g) => g.ativo === false)
+  const processando = gifts.filter((g) => g.status === "processando_pagamento")
   const recebidos = gifts.filter((g) => g.status === "comprado")
   const jaTemos = gifts.filter((g) => g.status === "obtido")
 
@@ -28,9 +30,11 @@ export function AdminGiftList() {
       ? ativos
       : tab === "desativados"
         ? desativados
-        : tab === "recebidos"
-          ? recebidos
-          : jaTemos
+        : tab === "processando"
+          ? processando
+          : tab === "recebidos"
+            ? recebidos
+            : jaTemos
 
   const removerParaAtivos = (gift: Gift) => {
     setGiftVisibility(gift.id, true)
@@ -44,14 +48,71 @@ export function AdminGiftList() {
     })
   }
 
+  const verificarTodosPagamentos = async () => {
+    setIsCheckingPayments(true)
+    try {
+      const response = await fetch('/api/payment/check-all-pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao verificar pagamentos',
+          description: data.error || 'Tente novamente',
+        })
+        return
+      }
+
+      if (data.updated && data.updated.length > 0) {
+        const paidGifts = data.updated.filter((t: any) => t.status === 'paid')
+        if (paidGifts.length > 0) {
+          // Recarregar página para refletir mudanças
+          setTimeout(() => window.location.reload(), 1000)
+        }
+      }
+
+      toast({
+        title: '✅ Verificação Concluída',
+        description: `${data.paid} pagos, ${data.pending} pendentes`,
+      })
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao verificar',
+        description: String(error),
+      })
+    } finally {
+      setIsCheckingPayments(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="font-serif text-2xl text-foreground">Gerenciar Presentes</h2>
 
         <div className="flex flex-wrap gap-2">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={verificarTodosPagamentos}
+            disabled={isCheckingPayments}
+            title="Verificar manualmente o status de todos os pagamentos em processamento"
+          >
+            <RefreshCw className={`w-4 h-4 mr-1 ${isCheckingPayments ? 'animate-spin' : ''}`} /> 
+            Verificar Pagamentos
+          </Button>
+
           <Button size="sm" variant={tab === "ativos" ? "default" : "outline"} onClick={() => setTab("ativos")}>
             <GiftIcon className="w-4 h-4 mr-1" /> Ativos
+          </Button>
+
+          <Button size="sm" variant={tab === "processando" ? "secondary" : "outline"} onClick={() => setTab("processando")}>
+            <GiftIcon className="w-4 h-4 mr-1" /> Processando
           </Button>
 
           <Button size="sm" variant={tab === "desativados" ? "destructive" : "outline"} onClick={() => setTab("desativados")}>
@@ -121,6 +182,18 @@ export function AdminGiftList() {
                     >
                       <Heart className="w-4 h-4 mr-2 sm:mr-1" />
                       <span className="sm:inline">Já temos</span>
+                    </Button>
+                  </>
+                ) : tab === "processando" ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => removerParaAtivos(gift)}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 sm:mr-1" />
+                      Cancelar
                     </Button>
                   </>
                 ) : tab === "recebidos" ? (

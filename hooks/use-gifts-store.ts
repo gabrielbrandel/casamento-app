@@ -58,6 +58,10 @@ export function useGiftsStore() {
     upsertGift({ id: giftId, status: obtained ? "obtido" : "disponivel" })
   }, [upsertGift])
 
+  const setGiftPaymentProcessing = useCallback((giftId: string) => {
+    upsertGift({ id: giftId, status: "processando_pagamento" })
+  }, [upsertGift])
+
   const addGift = useCallback((gift: Gift) => {
     upsertGift(gift)
   }, [upsertGift])
@@ -82,6 +86,7 @@ export function useGiftsStore() {
     updateGiftPrice,
     setGiftVisibility,
     setGiftObtained,
+    setGiftPaymentProcessing,
     addGift,
     getMessages,
   }
