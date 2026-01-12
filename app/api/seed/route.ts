@@ -15,8 +15,9 @@ export async function POST() {
     return NextResponse.json({ ok: true, count: res.length })
   } catch (err: any) {
     console.error("Seed failed", err)
+    const serialized = typeof err === "string" ? err : err?.message || JSON.stringify(err)
     return NextResponse.json(
-      { ok: false, error: err?.message ?? "Erro ao executar seed" },
+      { ok: false, error: serialized ?? "Erro ao executar seed" },
       { status: 500 },
     )
   }
