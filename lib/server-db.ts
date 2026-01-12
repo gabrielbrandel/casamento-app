@@ -73,44 +73,41 @@ async function getPgPool() {
         await pgPool.query("SELECT 1")
         console.log("Database connection successful")
       } catch (connError) {
-        console.error("Connection test failed, retrying without sslmode:", connError instanceof Error ? connError.message : connError)
-        // Close failed pool
-        await pgPool.end()
+          console.error("Connection test failed, retrying without SSL:", connError instanceof Error ? connError.message : connError)
+          // Close failed pool
+          await pgPool.end()
+          pgPool = null
+          
+          // Retry without sslmode - properly handle URL parameters
+          let cleanUrl = connectionString
+            .replace(/\?sslmode=require/, "")
+            .replace(/&sslmode=require/, "")
+          
+          // If URL has query params after removal, ensure proper formatting
+          if (cleanUrl.includes("?") && cleanUrl.includes("&")) {
+            // Already has ? so & is fine
+          } else if (!cleanUrl.includes("?") && cleanUrl.includes("&")) {
+            // No ?, need to convert first & to ?
+            cleanUrl = cleanUrl.replace("&", "?")
+          }
+          
+          console.log("Retrying with URL (sslmode removed)")
+          pgPool = new Pool({
+            connectionString: cleanUrl,
+            max: 5,
+            connectionTimeoutMillis: 20000,
+            idleTimeoutMillis: 30000,
+            ssl: false,
+          })
+        }
+      } catch (error) {
+        console.error('Error initializing database pool:', error)
         pgPool = null
-        
-        // Retry without sslmode
-        connectionString = connectionString.replace("?sslmode=require", "").replace("&sslmode=require", "")
-        pgPool = new Pool({
-          connectionString,
-          max: 5,
-          connectionTimeoutMillis: 20000,
-          idleTimeoutMillis: 30000,
-          ssl: false,
-        })
+        throw error
       }
-
-      // create table if not exists
-      await pgPool.query(`
-        CREATE TABLE IF NOT EXISTS gifts (
-          id TEXT PRIMARY KEY,
-          nome TEXT,
-          categoria TEXT,
-          precoEstimado TEXT,
-          faixaPreco TEXT,
-          imageUrl TEXT,
-          ativo BOOLEAN,
-          status TEXT,
-          compradoPor JSONB
-        );
-      `)
-    } catch (error) {
-      console.error('Error initializing database pool:', error)
-      pgPool = null
-      throw error
     }
+    return pgPool
   }
-  return pgPool
-}
 
 function normalizeGift(row: any): any {
   return {

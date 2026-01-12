@@ -44,10 +44,19 @@ export async function GET() {
           console.error("SSL connection failed, retrying without SSL")
           await pool.end()
           
-          // Retry without SSL
-          connString = connString.replace("?sslmode=require", "").replace("&sslmode=require", "")
+          // Retry without SSL - properly handle URL parameters
+          let cleanUrl = connString
+            .replace(/\?sslmode=require/, "")
+            .replace(/&sslmode=require/, "")
+          
+          // If URL has query params after removal, ensure proper formatting
+          if (!cleanUrl.includes("?") && cleanUrl.includes("&")) {
+            // No ?, need to convert first & to ?
+            cleanUrl = cleanUrl.replace("&", "?")
+          }
+          
           pool = new Pool({
-            connectionString: connString,
+            connectionString: cleanUrl,
             connectionTimeoutMillis: 10000,
             ssl: false,
           })
