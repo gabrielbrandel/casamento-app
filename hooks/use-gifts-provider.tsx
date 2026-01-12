@@ -1,9 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react"
-import { type Gift, initialGifts } from "@/data/gifts"
-
-const STORAGE_KEY = "wedding-gifts-thais-gabriel"
+import { type Gift } from "@/data/gifts"
 
 interface GiftsContextType {
   gifts: Gift[]
@@ -30,14 +28,13 @@ export function GiftsProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json()
         setGifts(data)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
       } else {
-        const stored = localStorage.getItem(STORAGE_KEY)
-        setGifts(stored ? JSON.parse(stored) : initialGifts)
+        console.error('Failed to load gifts from API:', res.status)
+        setGifts([])
       }
-    } catch {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      setGifts(stored ? JSON.parse(stored) : initialGifts)
+    } catch (error) {
+      console.error('Error loading gifts:', error)
+      setGifts([])
     } finally {
       setIsLoading(false)
     }
@@ -95,16 +92,18 @@ export function GiftsProvider({ children }: { children: ReactNode }) {
         }
         updated = [...prev, defaultGift]
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       
-      // Call API in background only if there are actual changes
-      setTimeout(() => {
-        fetch("/api/gifts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedGift),
-        }).catch(() => console.error("Failed to upsert gift"))
-      }, 100)
+      // Call API to persist changes
+      fetch("/api/gifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedGift),
+      })
+        .then(() => {
+          // Reload from API after successful save to ensure sync
+          loadGifts()
+        })
+        .catch(() => console.error("Failed to upsert gift"))
       
       return updated
     })

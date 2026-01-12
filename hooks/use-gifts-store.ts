@@ -4,8 +4,6 @@ import { useCallback } from "react"
 import { type Gift } from "@/data/gifts"
 import { useGiftsContext } from "./use-gifts-provider"
 
-const STORAGE_KEY = "wedding-gifts-thais-gabriel"
-
 export interface GiftPurchase {
   giftId: string
   nome: string
