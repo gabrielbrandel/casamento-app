@@ -103,16 +103,24 @@ function normalizeGift(row: any): any {
 export async function getAllGifts() {
   try {
     if (isPostgres()) {
-      const pool = await getPgPool()
-      const res = await pool.query("SELECT * FROM gifts ORDER BY nome")
-      return res.rows.map((r: any) => normalizeGift(r))
+      try {
+        const pool = await getPgPool()
+        const res = await pool.query("SELECT * FROM gifts ORDER BY nome")
+        console.log(`getAllGifts: Found ${res.rows.length} gifts from PostgreSQL`)
+        return res.rows.map((r: any) => normalizeGift(r))
+      } catch (pgError) {
+        console.error('PostgreSQL error in getAllGifts:', pgError instanceof Error ? pgError.message : pgError)
+        throw pgError
+      }
     }
 
     await ensureLocalDb()
     const raw = await fs.promises.readFile(LOCAL_DB, "utf-8")
-    return JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    console.log(`getAllGifts: Found ${parsed.length} gifts from local file`)
+    return parsed
   } catch (error) {
-    console.error('Error in getAllGifts:', error)
+    console.error('Error in getAllGifts:', error instanceof Error ? error.message : error)
     return []
   }
 }
