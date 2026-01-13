@@ -13,12 +13,16 @@ import { useAuthStore } from "@/hooks/use-auth-store"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LogOut, Shield, ArrowUp } from "lucide-react"
+import { PublicStats } from "./public-stats"
+import { FreeDonationCard } from "./free-donation-card"
+import { useFavoritesStore } from "@/hooks/use-favorites-store"
 
 export function GiftList() {
   const { gifts, isLoading, purchaseGift, removeGiftPurchase } = useGiftsStore()
   const { addGift: addPublicGift } = useGiftsStore()
   const { addGift: addAdminGift } = useAdminStore()
   const { isAdminLoggedIn, logout } = useAuthStore()
+  const { favorites } = useFavoritesStore()
   const { toast } = useToast()
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("Todas")
@@ -27,6 +31,7 @@ export function GiftList() {
   const [sortOrder, setSortOrder] = useState("none")
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [newNome, setNewNome] = useState("")
   const [newPreco, setNewPreco] = useState("")
   const [newImage, setNewImage] = useState("")
@@ -81,6 +86,10 @@ export function GiftList() {
       if (gift.ativo === false) return false
       // skip gifts with missing nome
       if (!gift.nome) return false
+      
+      // Filter by favorites if enabled
+      if (showFavoritesOnly && !favorites.includes(gift.id)) return false
+      
       const matchesSearch = gift.nome.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = category === "Todas" || gift.categoria === category
       const matchesPriceRange = priceRange === "todas" || gift.faixaPreco === priceRange
@@ -107,7 +116,7 @@ export function GiftList() {
     }
 
     return base
-  }, [gifts, search, category, priceRange, status, sortOrder, isAdminLoggedIn, adminHighlightId])
+  }, [gifts, search, category, priceRange, status, sortOrder, isAdminLoggedIn, adminHighlightId, showFavoritesOnly, favorites])
 
   const handleConfirmGift = (data: {
     nome: string
@@ -139,7 +148,7 @@ export function GiftList() {
   }, [])
 
   return (
-    <section id="presentes" className="py-20 bg-background">
+    <section id="presentes" className="py-20 bg-background scroll-mt-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-serif font-light mb-4 text-foreground">Lista de Presentes</h2>
@@ -203,42 +212,88 @@ export function GiftList() {
           </div>
         )}
 
-        <GiftFilters
-          search={search}
-          onSearchChange={setSearch}
-          category={category}
-          onCategoryChange={setCategory}
-          priceRange={priceRange}
-          onPriceRangeChange={setPriceRange}
-          status={status}
-          onStatusChange={setStatus}
-          sortOrder={sortOrder}
-          onSortChange={setSortOrder}
-          isAdmin={isAdminLoggedIn}
-        />
+        {/* Estatísticas Públicas */}
+        {!isAdminLoggedIn && <PublicStats />}
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <GiftCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : filteredGifts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-            {filteredGifts.map((gift) => (
-              <GiftCard
-                key={gift.id}
-                gift={gift}
-                onClick={() => setSelectedGift(gift)}
-                onRemove={() => handleRemoveGift(gift.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Nenhum presente encontrado com os filtros selecionados.</p>
+        {/* Botão de Favoritos */}
+        {!isAdminLoggedIn && favorites.length > 0 && (
+          <div className="mb-6">
+            <Button
+              variant={showFavoritesOnly ? "default" : "outline"}
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              className="w-full md:w-auto"
+            >
+              <Heart className={`w-4 h-4 mr-2 ${showFavoritesOnly ? "fill-current" : ""}`} />
+              {showFavoritesOnly ? "Mostrar Todos" : `Meus Favoritos (${favorites.length})`}
+            </Button>
           </div>
         )}
+
+        {/* Filtros Mobile - Renderiza o botão sheet */}
+        <div className="md:hidden">
+          <GiftFilters
+            search={search}
+            onSearchChange={setSearch}
+            category={category}
+            onCategoryChange={setCategory}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            status={status}
+            onStatusChange={setStatus}
+            sortOrder={sortOrder}
+            onSortChange={setSortOrder}
+            isAdmin={isAdminLoggedIn}
+          />
+        </div>
+
+        {/* Layout responsivo: Sidebar no desktop */}
+        <div className="md:grid md:grid-cols-[300px_1fr] md:gap-6">
+          {/* Filtros Desktop - Sidebar */}
+          <div className="hidden md:block sticky top-18 h-fit">
+            <GiftFilters
+              search={search}
+              onSearchChange={setSearch}
+              category={category}
+              onCategoryChange={setCategory}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              status={status}
+              onStatusChange={setStatus}
+              sortOrder={sortOrder}
+              onSortChange={setSortOrder}
+              isAdmin={isAdminLoggedIn}
+            />
+          </div>
+
+          {/* Lista de presentes */}
+          <div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <GiftCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : filteredGifts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                {/* Card de Doação Livre - Primeiro item */}
+                {!isAdminLoggedIn && !showFavoritesOnly && <FreeDonationCard />}
+                
+                {filteredGifts.map((gift) => (
+                  <GiftCard
+                    key={gift.id}
+                    gift={gift}
+                    onClick={() => setSelectedGift(gift)}
+                    onRemove={() => handleRemoveGift(gift.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Nenhum presente encontrado com os filtros selecionados.</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         <GiftModal
           gift={selectedGift}

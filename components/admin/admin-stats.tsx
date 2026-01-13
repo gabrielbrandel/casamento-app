@@ -1,4 +1,9 @@
-import { Gift, CreditCard, Package, CheckCircle, Clock, DollarSign } from "lucide-react"
+"use client"
+
+import { useState } from "react"
+import { Gift, CreditCard, Package, CheckCircle, Clock, DollarSign, Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 
 interface Stats {
   totalPresentes: number
@@ -18,6 +23,50 @@ interface AdminStatsProps {
 }
 
 export function AdminStats({ stats }: AdminStatsProps) {
+  const [isCleaningUp, setIsCleaningUp] = useState(false)
+  const { toast } = useToast()
+
+  const handleCleanupOldTransactions = async () => {
+    if (!confirm('Tem certeza que deseja limpar transações pendentes há mais de 1 hora? Os presentes voltarão para disponível.')) {
+      return
+    }
+
+    setIsCleaningUp(true)
+    try {
+      const response = await fetch('/api/transaction/cleanup-old', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: 'Limpeza concluída',
+          description: data.message,
+        })
+        
+        // Recarregar a página para atualizar os dados
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro na limpeza',
+          description: data.error || 'Não foi possível limpar transações antigas',
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao limpar',
+        description: 'Erro ao conectar com o servidor',
+      })
+    } finally {
+      setIsCleaningUp(false)
+    }
+  }
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -27,6 +76,28 @@ export function AdminStats({ stats }: AdminStatsProps) {
 
   return (
     <div className="space-y-8">
+      {/* Botões de ação */}
+      <div className="flex justify-end gap-3">
+        <Button
+          onClick={handleCleanupOldTransactions}
+          disabled={isCleaningUp}
+          variant="outline"
+          size="sm"
+        >
+          {isCleaningUp ? (
+            <>
+              <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin mr-2" />
+              Limpando...
+            </>
+          ) : (
+            <>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Limpar Transações Antigas
+            </>
+          )}
+        </Button>
+      </div>
+
       <div>
         <h2 className="font-serif text-2xl text-foreground mb-6">Resumo Geral</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

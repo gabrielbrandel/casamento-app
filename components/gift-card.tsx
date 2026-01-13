@@ -12,7 +12,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useAuthStore } from "@/hooks/use-auth-store"
 import { useAdminStore } from "@/hooks/use-admin-store"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
+import { useFavoritesStore } from "@/hooks/use-favorites-store"
 import { useToast } from "@/hooks/use-toast"
+import { LazyImage } from "@/components/lazy-image"
 
 interface GiftCardProps {
   gift: Gift
@@ -25,10 +27,22 @@ export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
   const { isAdminLoggedIn } = useAuthStore()
   const { setGiftVisibility: setAdminVisibility, setGiftObtained: setAdminObtained } = useAdminStore()
   const { setGiftVisibility: setPublicVisibility, setGiftObtained: setPublicObtained } = useGiftsStore()
+  const { isFavorite, toggleFavorite } = useFavoritesStore()
   const { toast } = useToast()
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<null | "toggleActive" | "toggleObtained">(null)
+  
+  const isFav = isFavorite(gift.id)
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleFavorite(gift.id)
+    toast({
+      title: isFav ? "Removido dos favoritos" : "Adicionado aos favoritos",
+      description: isFav ? "" : "Veja seus favoritos no topo da página",
+    })
+  }
 
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -46,16 +60,29 @@ export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
       `}
     >
       <div className="relative h-44 bg-background overflow-hidden">
-        <Image
+        <LazyImage
           src={gift.imageUrl || "/placeholder.svg"}
           alt={gift.nome}
           fill
-          unoptimized={Boolean(gift.imageUrl?.startsWith("http"))}
           className={`object-contain p-1 transition-transform duration-300 ${isComprado ? "grayscale" : "group-hover:scale-105"
             }`}
         />
 
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-secondary/80 to-transparent" />
+
+        {/* Botão de Favorito */}
+        {!isAdminLoggedIn && !isComprado && (
+          <button
+            onClick={handleFavoriteClick}
+            className="absolute top-2 right-2 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors"
+          >
+            <Heart 
+              className={`w-5 h-5 transition-colors ${
+                isFav ? "fill-red-500 text-red-500" : "text-muted-foreground"
+              }`}
+            />
+          </button>
+        )}
 
         {isComprado && (
           <div className="absolute inset-0 flex items-center justify-center">

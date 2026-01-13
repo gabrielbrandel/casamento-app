@@ -4,6 +4,7 @@ import { Heart, MapPin, Calendar, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/hooks/use-auth-store"
 import { useRouter } from "next/navigation"
+import { CountdownTimer } from "@/components/countdown-timer"
 
 export function HeroBanner() {
   const { isAdminLoggedIn } = useAuthStore()
@@ -48,6 +49,10 @@ export function HeroBanner() {
           <p className="text-lg">Igreja Santa Maria Goretti</p>
           <p className="text-sm mt-4 uppercase tracking-widest">Recepção</p>
           <p className="text-lg">Chácara Bela vista - Sarandi</p>
+        </div>
+
+        <div className="mt-12 flex justify-center">
+          <CountdownTimer targetDate="2026-04-25T18:00:00" />
         </div>
         {isAdminLoggedIn && (
           <div className="mt-8 flex justify-center">

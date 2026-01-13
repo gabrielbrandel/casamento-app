@@ -162,12 +162,14 @@ export async function POST(req: NextRequest) {
     // Salvar transação no Supabase
     if (transactionCode) {
       try {
+        const orderId = checkoutData.id || checkoutData.checkouts?.[0]?.id
         const saveResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/transaction/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             giftId,
             transactionCode,
+            orderId,
             amount,
             buyerEmail,
             buyerName,

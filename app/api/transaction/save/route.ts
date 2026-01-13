@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { giftId, transactionCode, amount, buyerEmail, buyerName, paymentMethod } = await req.json()
+    const { giftId, transactionCode, orderId, amount, buyerEmail, buyerName, paymentMethod } = await req.json()
 
     if (!giftId || !transactionCode || !amount) {
       return NextResponse.json(
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
         {
           gift_id: giftId,
           transaction_code: transactionCode,
+          order_id: orderId || null,
           amount,
           buyer_email: buyerEmail,
           buyer_name: buyerName,

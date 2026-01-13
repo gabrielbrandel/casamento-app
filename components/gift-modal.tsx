@@ -16,6 +16,7 @@ import { useAdminStore } from "@/hooks/use-admin-store"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
 import { useToast } from "@/hooks/use-toast"
 import { startPollingTransaction } from "@/lib/transaction-poller"
+import { ConfettiEffect } from "@/components/confetti"
 
 interface GiftModalProps {
   gift: Gift | null
@@ -43,6 +44,8 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const [showSuccess, setShowSuccess] = useState(false)
   const [copied, setCopied] = useState(false)
   const [errors, setErrors] = useState<{ nome?: string; cpf?: string; email?: string }>({})
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const [imageUrlInput, setImageUrlInput] = useState("")
   const [priceInput, setPriceInput] = useState("")
@@ -81,6 +84,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
     
     // Se for pagamento online (Pix ou Cartão), redireciona para PagSeguro
     if (finalTipoPagamento === "pix" || finalTipoPagamento === "cartao") {
+      setIsLoadingPayment(true)
       try {
         const priceText = gift?.precoEstimado || "R$ 0,00"
         const amount = parseFloat(priceText.replace(/[^\d,]/g, "").replace(",", "."))
@@ -103,6 +107,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
         const data = await response.json()
 
         if (!response.ok || !data.success) {
+          setIsLoadingPayment(false)
           toast({
             variant: "destructive",
             title: "Erro ao criar pagamento",
@@ -122,9 +127,15 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
           }
           
           window.open(data.checkoutUrl, '_blank')
+          
+          // Aguarda 2 segundos antes de fechar o loading
+          setTimeout(() => {
+            setIsLoadingPayment(false)
+          }, 2000)
           return
         }
       } catch (error) {
+        setIsLoadingPayment(false)
         toast({
           variant: "destructive",
           title: "Erro ao processar pagamento",
@@ -144,8 +155,10 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
     })
 
     setShowSuccess(true)
+    setShowConfetti(true)
     setTimeout(() => {
       setShowSuccess(false)
+      setShowConfetti(false)
       setNome("")
       setCpf("")
       setEmail("")
@@ -155,7 +168,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       setMetodoPagamento("pix")
       setErrors({})
       onClose()
-    }, 1600)
+    }, 3000)
   }
 
   const copyPixKey = () => {
@@ -179,22 +192,25 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   if (!gift) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent
-        className="max-w-lg max-h-[90vh] overflow-y-auto"
-        onOpenAutoFocus={(e) => e.preventDefault()}>
-        {showSuccess ? (
-          <div className="py-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
-              <Check className="w-8 h-8 text-primary" />
+    <>
+      <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
+      
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          onOpenAutoFocus={(e) => e.preventDefault()}>
+          {showSuccess ? (
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center animate-bounce">
+                <Check className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-2xl font-semibold mb-2">Presente Confirmado!</h3>
+              <p className="text-muted-foreground">Obrigado por presentear os noivos!</p>
             </div>
-            <h3 className="text-2xl font-semibold mb-2">Presente Confirmado!</h3>
-            <p className="text-muted-foreground">Obrigado por presentear os noivos!</p>
-          </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-semibold">Presentear os Noivos</DialogTitle>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-semibold">Presentear os Noivos</DialogTitle>
             </DialogHeader>
 
             <div className="flex items-center gap-4 p-4 bg-secondary rounded-lg mb-6">
@@ -396,7 +412,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                   </Label>
                 </div>
 
-                {/* Opção: Contribuir em Dinheiro */}
+                {/* Opção: Contribuir com PagSeguro */}
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3 p-4 border-2 rounded-lg hover:border-primary/50 transition-colors">
                     <input
@@ -408,92 +424,58 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                     />
                     <Label htmlFor="dinheiro" className="flex items-start gap-3 flex-1 cursor-pointer">
                       <CreditCard className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                      <span className="text-base">Vou contribuir em dinheiro</span>
+                      <div>
+                        <span className="text-base block">Pagar com PagSeguro</span>
+                        <span className="text-sm text-muted-foreground">Pix, Cartão e Parcelamento</span>
+                      </div>
                     </Label>
                   </div>
 
-                  {/* Sub-opções quando contribuir em dinheiro */}
+                  {/* Mensagem quando PagSeguro selecionado */}
                   {contribuirDinheiro && (
                     <div className="ml-8 space-y-3 animate-in slide-in-from-top-2">
-                      <div
-                        onClick={() => setMetodoPagamento("cartao")}
-                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          metodoPagamento === "cartao" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/30"
-                        }`}
-                      >
+                      <div className="flex items-center gap-4 p-4 border-2 border-primary bg-primary/5 rounded-lg">
+                        {/* Ícone Pix via base64 */}
                         <div className="flex-shrink-0">
-                          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M2 10L22 10" stroke="currentColor" strokeWidth="2"/>
-                          </svg>
+                          <img
+                              src="https://media.licdn.com/dms/image/v2/C4D0BAQGFyxSovkESiA/company-logo_200_200/company-logo_200_200/0/1630534278219/pagseguro_pagbank_logo?e=2147483647&v=beta&t=tFTTBv04rSjaXA7PqKcDOyT364FoRYlwybp7ZovA9s0"
+                            alt="Pix"
+                            className="w-10 h-10 object-contain"
+                          />
                         </div>
+
                         <div className="flex-1">
-                          <p className="font-medium">Pagar com Cartão de Crédito</p>
-                          <p className="text-sm text-muted-foreground">Parcelamento disponível</p>
+                          <p className="font-medium">Pagar com PagSeguro</p>
+                          <p className="text-sm text-muted-foreground">Pix, Cartão e Parcelamento disponível</p>
                         </div>
-                        {metodoPagamento === "cartao" && (
-                          <Check className="w-5 h-5 text-primary" />
-                        )}
+
+                        <Check className="w-5 h-5 text-primary" />
                       </div>
 
-                        <div
-                          onClick={() => setMetodoPagamento("pix")}
-                          className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${metodoPagamento === "pix"
-                              ? "border-primary bg-primary/5"
-                              : "border-gray-200 hover:border-primary/30"
-                            }`}
-                        >
-                          {/* Ícone Pix via base64 */}
-                          <div className="flex-shrink-0">
-                            <img
-                              src="data:image/png;base64,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"
-                              alt="Pix"
-                              className="w-8 h-8 object-contain"
-                            />
-                          </div>
-
-                          {/* Texto */}
-                          <div className="flex-1">
-                            <p className="font-medium">Pagar com Pix</p>
-                            <p className="text-sm text-muted-foreground">
-                              Transferência instantânea
-                            </p>
-                          </div>
-
-                          {/* Check */}
-                          {metodoPagamento === "pix" && (
-                            <Check className="w-5 h-5 text-primary" />
-                          )}
-                        </div>
-
-
-                      {/* Mensagem de redirecionamento */}
-                      {metodoPagamento === "pix" && (
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg animate-in slide-in-from-top-2">
-                          <p className="text-sm text-green-900 font-medium">✅ Você será redirecionado ao checkout seguro do PagSeguro</p>
-                          <p className="text-xs text-green-700 mt-1">Gere o QR Code Pix na tela de pagamento</p>
-                        </div>
-                      )}
-
-                      {/* Mensagem de redirecionamento para cartão */}
-                      {metodoPagamento === "cartao" && (
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg animate-in slide-in-from-top-2">
-                          <p className="text-sm text-green-900 font-medium">✅ Você será redirecionado ao checkout seguro do PagSeguro</p>
-                          <p className="text-xs text-green-700 mt-1">Aceita todas as bandeiras de cartão com parcelamento</p>
-                        </div>
-                      )}
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg animate-in slide-in-from-top-2">
+                        <p className="text-sm text-green-900 font-medium">✅ Você será redirecionado ao checkout seguro do PagSeguro</p>
+                        <p className="text-xs text-green-700 mt-1">Escolha entre Pix (instantâneo) ou Cartão de Crédito com parcelamento</p>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <Button onClick={handleSubmit} className="w-full" size="lg">
-                {contribuirDinheiro ? "Ir para Pagamento" : "Confirmar Presente"}
+              <Button onClick={handleSubmit} className="w-full" size="lg" disabled={isLoadingPayment}>
+                {isLoadingPayment ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Abrindo checkout...
+                  </div>
+                ) : (
+                  contribuirDinheiro ? "Ir para Pagamento" : "Confirmar Presente"
+                )}
               </Button>
             </div>
           </>
         )}
       </DialogContent>
     </Dialog>
+    </>
   )
 }

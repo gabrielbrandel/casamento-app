@@ -1,9 +1,15 @@
 "use client"
 
-import { Search } from "lucide-react"
+import { useState, useMemo } from "react"
+import { Search, Filter, X, SlidersHorizontal } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { categories, priceRanges } from "@/data/gifts"
+import { Badge } from "@/components/ui/badge"
 
 interface GiftFiltersProps {
   search: string
@@ -32,67 +38,130 @@ export function GiftFilters({
   onSortChange,
   isAdmin = false,
 }: GiftFiltersProps) {
-  return (
-    <div className="flex flex-col md:flex-row gap-3 mb-8">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-        <Input
-          placeholder="Buscar presente..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-11 h-12 text-base md:h-10 md:text-sm"
-        />
+  const [open, setOpen] = useState(false)
+  
+  const activeFiltersCount = useMemo(() => {
+    let count = 0
+    if (category !== "todos") count++
+    if (priceRange !== "todos") count++
+    return count
+  }, [category, priceRange])
+
+  const clearFilters = () => {
+    onCategoryChange("todos")
+    onPriceRangeChange("todos")
+  }
+
+  const filterContentJSX = (
+    <div className="space-y-6">
+      {/* Busca */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            placeholder="buscar produto na minha lista"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-11 h-12 text-base"
+          />
+        </div>
       </div>
 
-      <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-full md:w-[180px] h-12 text-base md:h-10 md:text-sm">
-          <SelectValue placeholder="Categoria" />
-        </SelectTrigger>
-        <SelectContent>
-          {categories.map((cat) => (
-            <SelectItem key={cat} value={cat}>
-              {cat}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Categorias */}
+      <div className="space-y-3">
+        <h3 className="font-medium text-base">Categoria</h3>
+        <div className="space-y-2.5">
+          {categories.map((cat) => {
+            return (
+              <div key={cat} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`cat-${cat}`}
+                  checked={category === cat}
+                  onCheckedChange={() => onCategoryChange(cat)}
+                />
+                <Label
+                  htmlFor={`cat-${cat}`}
+                  className="text-sm font-normal cursor-pointer flex-1"
+                >
+                  {cat}
+                </Label>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
-      <Select value={priceRange} onValueChange={onPriceRangeChange}>
-        <SelectTrigger className="w-full md:w-[180px] h-12 text-base md:h-10 md:text-sm">
-          <SelectValue placeholder="Faixa de preço" />
-        </SelectTrigger>
-        <SelectContent>
-          {priceRanges.map((range) => (
-            <SelectItem key={range.value} value={range.value}>
-              {range.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Faixas de Preço */}
+      <div className="space-y-3">
+        <h3 className="font-medium text-base">Variação de preço</h3>
+        <RadioGroup value={priceRange} onValueChange={onPriceRangeChange}>
+          {priceRanges.map((range) => {
+            return (
+              <div key={range.value} className="flex items-center space-x-2">
+                <RadioGroupItem value={range.value} id={`price-${range.value}`} />
+                <Label
+                  htmlFor={`price-${range.value}`}
+                  className="text-sm font-normal cursor-pointer flex-1"
+                >
+                  {range.label}
+                </Label>
+              </div>
+            )
+          })}
+        </RadioGroup>
+      </div>
 
-      <Select value={status} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-full md:w-[180px] h-12 text-base md:h-10 md:text-sm">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="disponivel">Disponíveis</SelectItem>
-          {isAdmin && <SelectItem value="comprado">Comprados</SelectItem>}
-          {isAdmin && <SelectItem value="todos">Todos</SelectItem>}
-        </SelectContent>
-      </Select>
-
-      {onSortChange && (
-        <Select value={sortOrder} onValueChange={onSortChange}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 text-base md:h-10 md:text-sm">
-            <SelectValue placeholder="Ordenar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Sem ordenação</SelectItem>
-            <SelectItem value="price-asc">Preço: mais barato</SelectItem>
-            <SelectItem value="price-desc">Preço: mais caro</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Limpar Filtros */}
+      {activeFiltersCount > 0 && (
+        <Button
+          variant="outline"
+          onClick={clearFilters}
+          className="w-full"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Limpar filtros
+          <Badge variant="secondary" className="ml-2">
+            {activeFiltersCount}
+          </Badge>
+        </Button>
       )}
     </div>
+  )
+
+  return (
+    <>
+      {/* Mobile: Botão que abre Sheet */}
+      <div className="md:hidden">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full h-12 justify-center relative">
+              <SlidersHorizontal className="w-5 h-5 mr-2" />
+              Filtrar e ordenar
+              {activeFiltersCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center"
+                >
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Filtros</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              {filterContentJSX}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop: Conteúdo direto */}
+      <div className="hidden md:block bg-card border rounded-lg p-6">
+        {filterContentJSX}
+      </div>
+    </>
   )
 }
