@@ -39,7 +39,7 @@ export function GiftList() {
   const [adminHighlightId, setAdminHighlightId] = useState<string | null>(null)
   const handleAddGift = () => {
     if (!newNome.trim() || !newPreco.trim()) {
-      alert("Nome e preço são obrigatórios")
+      alert("Nome e preço são obrigatórios!")
       return
     }
 
