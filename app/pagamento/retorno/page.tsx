@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-export default function PaymentReturnPage() {
+function PaymentReturnContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const giftId = searchParams.get('gift')
@@ -46,5 +46,20 @@ export default function PaymentReturnPage() {
         <p className="text-muted-foreground">Processando seu pagamento...</p>
       </div>
     </div>
+  )
+}
+
+export default function PaymentReturnPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <PaymentReturnContent />
+    </Suspense>
   )
 }
