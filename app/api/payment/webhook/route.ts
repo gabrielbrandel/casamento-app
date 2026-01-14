@@ -46,35 +46,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
   }
 }
-        const currentGift = gifts.find((g: any) => g.id === giftId);
 
-        if (currentGift) {
-          await upsertGift({
-            ...currentGift,
-            status: 'comprado',
-            compradoPor: buyerName,
-            tipoPagamento: 'cartao',
-          });
-
-          console.log(`Gift ${giftId} marked as purchased by ${buyerName}`);
-        } else {
-          console.warn(`Gift ${giftId} not found in database`);
-        }
-      } catch (dbError) {
-        console.error('Failed to update gift in database:', dbError);
-        // Não retorna erro para PagSeguro mesmo se falhar no DB
-        // Isso evita reenvios infinitos da notificação
-      }
-    }
-
-    // Retorna 200 para PagSeguro parar de reenviar notificação
-    return NextResponse.json({ received: true });
-
-  } catch (error) {
-    console.error('Webhook processing error:', error);
-    return NextResponse.json(
-      { error: 'Webhook processing failed', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
