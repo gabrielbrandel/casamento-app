@@ -10,15 +10,15 @@ const locations = [
     id: "cerimonia",
     title: "Cerimônia",
     name: "Igreja Santa Maria Goretti",
-    address: "Av. Brasil, 2000 - Jardim América, São Paulo - SP",
-    mapsUrl: "https://www.google.com/maps/search/?api=1&query=Igreja+Nossa+Senhora+do+Brasil+São+Paulo",
+    address: "R. Visc. de Nassau, 534 A - Zona 7, Maringá - PR, 87020-030",
+    mapsUrl: "https://www.google.com/maps/search/?api=1&query=Igreja+Santa+Maria+Goretti+Maringá+PR",
   },
   {
     id: "festa",
     title: "Recepção",
     name: "Chácara Bela vista - Sarandi",
     address: "Rua das Flores, 500 - Moema, São Paulo - SP",
-    mapsUrl: "https://www.google.com/maps/search/?api=1&query=Espaço+Gardens+Moema+São+Paulo",
+    mapsUrl: "https://www.google.com/maps/place/Ch%C3%A1cara+Bela+Vista+Sarandi./@-23.441217,-51.8494107,17z/data=!3m1!4b1!4m6!3m5!1s0x94ecc50a1ff09f67:0xe89ec6b10387d9ea!8m2!3d-23.4412219!4d-51.8468358!16s%2Fg%2F11fvpvqqsj?entry=ttu&g_ep=EgoyMDI2MDEwNy4wIKXMDSoASAFQAw%3D%3D",
   },
 ]
 
