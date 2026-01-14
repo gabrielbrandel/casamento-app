@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Heart, DollarSign } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,23 @@ export function FreeDonationCard() {
   const [cpf, setCpf] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  // Carregar dados salvos do localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const savedData = localStorage.getItem('giftFormData')
+    if (savedData) {
+      try {
+        const { nome: savedNome, cpf: savedCpf, email: savedEmail } = JSON.parse(savedData)
+        if (savedNome) setNome(savedNome)
+        if (savedCpf) setCpf(savedCpf)
+        if (savedEmail) setEmail(savedEmail)
+      } catch (error) {
+        console.error('Erro ao carregar dados salvos:', error)
+      }
+    }
+  }, [])
 
   const formatCurrency = (value: string) => {
     const numbers = value.replace(/\D/g, "")

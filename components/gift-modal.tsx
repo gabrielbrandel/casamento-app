@@ -48,6 +48,32 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const [showConfetti, setShowConfetti] = useState(false)
 
   const [imageUrlInput, setImageUrlInput] = useState("")
+
+  // Carregar dados salvos do localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const savedData = localStorage.getItem('giftFormData')
+    if (savedData) {
+      try {
+        const { nome: savedNome, cpf: savedCpf, email: savedEmail } = JSON.parse(savedData)
+        if (savedNome) setNome(savedNome)
+        if (savedCpf) setCpf(savedCpf)
+        if (savedEmail) setEmail(savedEmail)
+      } catch (error) {
+        console.error('Erro ao carregar dados salvos:', error)
+      }
+    }
+  }, [])
+
+  // Salvar dados no localStorage quando mudarem
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    if (nome || cpf || email) {
+      localStorage.setItem('giftFormData', JSON.stringify({ nome, cpf, email }))
+    }
+  }, [nome, cpf, email])
   const [priceInput, setPriceInput] = useState("")
   const [openImageEditor, setOpenImageEditor] = useState(false)
   const [openPriceEditor, setOpenPriceEditor] = useState(false)
