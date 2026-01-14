@@ -15,11 +15,24 @@ export async function POST(req: NextRequest) {
     const token = process.env.PAGSEGURO_TOKEN;
     const env = process.env.PAGSEGURO_ENV || 'sandbox';
 
+    console.log('🔍 Diagnóstico de Variáveis:', {
+      emailExists: !!email,
+      tokenExists: !!token,
+      tokenLength: token?.length,
+      envValue: env,
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes('PAGSEGURO'))
+    });
+
     if (!email || !token) {
       return NextResponse.json(
         { 
           error: 'Configuração de pagamento não encontrada',
-          help: 'Defina PAGSEGURO_EMAIL e PAGSEGURO_TOKEN nas variáveis de ambiente'
+          help: 'Defina PAGSEGURO_EMAIL e PAGSEGURO_TOKEN nas variáveis de ambiente',
+          debug: {
+            emailConfigured: !!email,
+            tokenConfigured: !!token,
+            env: process.env.NODE_ENV
+          }
         },
         { status: 500 }
       );
