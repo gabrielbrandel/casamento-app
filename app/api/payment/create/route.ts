@@ -17,21 +17,32 @@ export async function POST(req: NextRequest) {
 
     console.log('🔍 Diagnóstico de Variáveis:', {
       emailExists: !!email,
+      emailValue: email,
       tokenExists: !!token,
       tokenLength: token?.length,
+      tokenPrefix: token?.substring(0, 10) + '...',
       envValue: env,
+      nodeEnv: process.env.NODE_ENV,
       allEnvKeys: Object.keys(process.env).filter(k => k.includes('PAGSEGURO'))
     });
 
     if (!email || !token) {
+      console.error('❌ Variáveis de ambiente não configuradas!', {
+        emailConfigured: !!email,
+        tokenConfigured: !!token,
+        env: process.env.NODE_ENV,
+        availableEnvVars: Object.keys(process.env).filter(k => k.includes('PAGSEGURO'))
+      });
+      
       return NextResponse.json(
         { 
           error: 'Configuração de pagamento não encontrada',
-          help: 'Defina PAGSEGURO_EMAIL e PAGSEGURO_TOKEN nas variáveis de ambiente',
+          help: 'Defina PAGSEGURO_EMAIL e PAGSEGURO_TOKEN nas variáveis de ambiente do Vercel',
           debug: {
             emailConfigured: !!email,
             tokenConfigured: !!token,
-            env: process.env.NODE_ENV
+            env: process.env.NODE_ENV,
+            pagseguroEnv: env
           }
         },
         { status: 500 }
@@ -75,10 +86,15 @@ export async function POST(req: NextRequest) {
 
     console.log('🔍 PagBank Request:', {
       url: baseUrl,
+      method: 'POST',
+      env,
       giftId,
       amount: amount.toFixed(2),
       buyerName,
+      buyerEmail,
       emailConfigured: !!email,
+      tokenConfigured: !!token,
+      tokenLength: token?.length,
     });
 
     // Faz request com Bearer token no header
@@ -93,16 +109,48 @@ export async function POST(req: NextRequest) {
 
     const responseText = await response.text();
 
-    console.log('📥 PagBank Response Status:', response.status);
+    console.log('📥 PagBank Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries()),
+    });
+    
     console.log('📥 PagBank Response Body:', responseText);
 
     if (!response.ok) {
+      console.error('❌ PagBank Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText,
+        requestUrl: baseUrl,
+        requestEnv: env,
+      });
+      
       let errorMessage = responseText;
+      let parsedError = null;
       try {
-        const jsonError = JSON.parse(responseText);
-        errorMessage = jsonError.message || JSON.stringify(jsonError);
+        parsedError = JSON.parse(responseText);
+        errorMessage = parsedError.message || JSON.stringify(parsedError);
+        console.error('📋 Parsed Error:', parsedError);
       } catch (e) {
         // Se não for JSON, usa o texto mesmo
+      }
+
+      // Detectar erro de allowlist (conta não liberada)
+      const isAllowlistError = responseText.includes('allowlist_access_required');
+      if (isAllowlistError) {
+        console.error('🚨 ERRO DE ALLOWLIST: Conta não liberada para API de produção');
+        return NextResponse.json(
+          { 
+            error: 'Conta PagBank não liberada para produção',
+            message: 'Sua conta precisa ser aprovada pelo PagBank para usar a API de produção. Entre em contato com o suporte do PagBank.',
+            details: 'allowlist_access_required',
+            helpUrl: 'https://dev.pagseguro.uol.com.br/docs/integracao-e-homologacao',
+            status: response.status,
+          },
+          { status: 403 }
+        );
       }
 
       return NextResponse.json(
