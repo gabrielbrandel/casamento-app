@@ -1,0 +1,65 @@
+# ========================================
+# VARIÁVEIS DE AMBIENTE - VERCEL PRODUÇÃO
+# ========================================
+# Configure estas variáveis no Vercel:
+# Settings → Environment Variables
+# ========================================
+
+# ===== SUPABASE (BANCO DE DADOS) =====
+NEXT_PUBLIC_SUPABASE_URL=https://swxihvypxowniugmvwml.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3eGlodnlweG93bml1Z212d21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMDgzNjEsImV4cCI6MjA4MzY4NDM2MX0.tggshuB1mi_v_y_kTNRBI9DQmfSLyOHl91Br8Bwny2w
+POSTGRES_URL=postgres://postgres.swxihvypxowniugmvwml:2Pfeiom89%23%23%23@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x
+
+# ===== PAGBANK - PRODUÇÃO =====
+PAGSEGURO_EMAIL=gabrielbrandel@gmail.com
+PAGSEGURO_TOKEN=7b723fb0-933a-4178-9d5a-a4f7a56efa8f950228144792bbed0641370b29e7d5790d4f-29d5-4d46-977f-5948706b7ba3
+PAGSEGURO_ENV=production
+NEXT_PUBLIC_APP_URL=https://casamento-app-nu.vercel.app
+
+# ========================================
+# INSTRUÇÕES DE CONFIGURAÇÃO NO VERCEL
+# ========================================
+#
+# 1. Acesse: https://vercel.com/seu-projeto/settings/environment-variables
+#
+# 2. Para cada variável acima, clique em "Add New"
+#
+# 3. Cole o NOME da variável (ex: PAGSEGURO_TOKEN)
+#
+# 4. Cole o VALOR da variável
+#
+# 5. Selecione os ambientes:
+#    ✅ Production
+#    ✅ Preview (opcional)
+#    ❌ Development (use .env.local)
+#
+# 6. Clique "Save"
+#
+# 7. Após adicionar TODAS as variáveis, faça um novo deploy:
+#    - Settings → Deployments → Latest Deployment → "Redeploy"
+#    - Ou faça um novo commit e push
+#
+# ========================================
+# CONFIGURAÇÃO NO PAGBANK (PRODUÇÃO)
+# ========================================
+#
+# Acesse: https://pagseguro.uol.com.br/
+# Preferências → Integração → Configurações
+#
+# ✅ Página de redirecionamento:
+#    URL: https://casamento-app-nu.vercel.app/pagamento/retorno
+#    Parâmetro: code
+#
+# ✅ Notificação de transação:
+#    URL: https://casamento-app-nu.vercel.app/api/payment/webhook
+#
+# ========================================
+# VERIFICAÇÃO APÓS DEPLOY
+# ========================================
+#
+# 1. Acesse o site: https://casamento-app-nu.vercel.app
+# 2. Teste o fluxo completo de pagamento
+# 3. Verifique os logs no Vercel: Functions → View Logs
+# 4. Confirme que o webhook está recebendo notificações
+#
+# ========================================

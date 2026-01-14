@@ -1,0 +1,58 @@
+# TESTE DA API DE PAGAMENTO
+# ===========================
+
+# EXEMPLO 1: PowerShell
+$body = @{
+    giftId = "39"
+    giftName = "Jogo de Panelas"
+    amount = 20.00
+    buyerName = "João Silva"
+    buyerEmail = "teste@email.com"
+    buyerCpf = "123.456.789-00"
+    paymentMethod = "pix"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://casamento-app-nu.vercel.app/api/payment/create" -Method Post -Body $body -ContentType "application/json"
+
+# ===========================
+
+# EXEMPLO 2: cURL (Windows CMD/PowerShell)
+curl -X POST "https://casamento-app-nu.vercel.app/api/payment/create" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"giftId\":\"39\",\"giftName\":\"Jogo de Panelas\",\"amount\":20.00,\"buyerName\":\"João Silva\",\"buyerEmail\":\"teste@email.com\",\"buyerCpf\":\"12345678900\",\"paymentMethod\":\"pix\"}"
+
+# ===========================
+
+# EXEMPLO 3: JSON puro (copie e cole no Postman/Insomnia)
+{
+  "giftId": "39",
+  "giftName": "Jogo de Panelas",
+  "amount": 20.00,
+  "buyerName": "João Silva",
+  "buyerEmail": "teste@email.com",
+  "buyerCpf": "12345678900",
+  "paymentMethod": "pix"
+}
+
+# ===========================
+# RESPOSTA ESPERADA (Sucesso):
+# ===========================
+{
+  "success": true,
+  "checkoutUrl": "https://sandbox.pagseguro.uol.com.br/checkout/v2/payment.html?code=XXXX",
+  "orderId": "CHEC_0F8B90A8-C4AC-464D-9C8F-32523AC6327E",
+  "transactionCode": "CHEC_0F8B90A8-C4AC-464D-9C8F-32523AC6327E"
+}
+
+# ===========================
+# RESPOSTA ESPERADA (Erro 500 - Sem Variáveis):
+# ===========================
+{
+  "error": "Configuração de pagamento não encontrada",
+  "help": "Defina PAGSEGURO_EMAIL e PAGSEGURO_TOKEN nas variáveis de ambiente",
+  "debug": {
+    "emailConfigured": false,
+    "tokenConfigured": false,
+    "env": "production"
+  }
+}
