@@ -7,37 +7,49 @@ function PaymentReturnContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const giftId = searchParams.get('gift')
+  const transactionCode = searchParams.get('code')
 
   useEffect(() => {
-    // Buscar o código da transação mais recente para este presente
-    const fetchTransactionCode = async () => {
-      if (!giftId) {
-        console.error('Gift ID não encontrado na URL')
-        router.push('/')
-        return
-      }
-
-      try {
-        // Buscar a transação mais recente deste presente
-        const response = await fetch(`/api/transaction/latest?giftId=${giftId}`)
-        const data = await response.json()
-
-        if (data.success && data.transactionCode) {
-          // Redirecionar para página de sucesso com o código
-          router.push(`/pagamento/sucesso?gift=${giftId}&code=${data.transactionCode}`)
-        } else {
-          console.error('Código de transação não encontrado')
-          // Mesmo sem código, redireciona para a página de sucesso
-          router.push(`/pagamento/sucesso?gift=${giftId}`)
-        }
-      } catch (error) {
-        console.error('Erro ao buscar código da transação:', error)
-        router.push(`/pagamento/sucesso?gift=${giftId}`)
-      }
+    // Se já tem o código da transação (vindo do PagBank), redireciona direto
+    if (transactionCode) {
+      // Buscar o gift_id pelo código da transação
+      fetch(`/api/transaction/by-code?code=${transactionCode}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.giftId) {
+            router.push(`/pagamento/sucesso?gift=${data.giftId}&code=${transactionCode}`)
+          } else {
+            // Se não encontrar o gift, redireciona só com o código
+            router.push(`/pagamento/sucesso?code=${transactionCode}`)
+          }
+        })
+        .catch(() => {
+          router.push(`/pagamento/sucesso?code=${transactionCode}`)
+        })
+      return
     }
 
-    fetchTransactionCode()
-  }, [giftId, router])
+    // Se tem gift_id mas não tem código, busca o código mais recente
+    if (giftId && !transactionCode) {
+      fetch(`/api/transaction/latest?giftId=${giftId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.transactionCode) {
+            router.push(`/pagamento/sucesso?gift=${giftId}&code=${data.transactionCode}`)
+          } else {
+            router.push(`/pagamento/sucesso?gift=${giftId}`)
+          }
+        })
+        .catch(() => {
+          router.push(`/pagamento/sucesso?gift=${giftId}`)
+        })
+      return
+    }
+
+    // Se não tem nada, volta para home
+    console.error('Nenhum parâmetro encontrado')
+    router.push('/')
+  }, [giftId, transactionCode, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10">
