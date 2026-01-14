@@ -126,7 +126,37 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
             startPollingTransaction(data.transactionCode)
           }
           
-          window.open(data.checkoutUrl, '_blank')
+          // Abre o checkout em nova aba
+          const pagBankWindow = window.open(data.checkoutUrl, '_blank')
+          
+          // Salvar informações para redirecionar após fechar a aba
+          localStorage.setItem('pendingPayment', JSON.stringify({
+            giftId: gift.id,
+            transactionCode: data.transactionCode,
+            timestamp: Date.now(),
+          }))
+          
+          // Detectar quando a aba do PagBank é fechada
+          const checkWindowClosed = setInterval(() => {
+            if (pagBankWindow && pagBankWindow.closed) {
+              clearInterval(checkWindowClosed)
+              
+              // Redirecionar para página de sucesso após 1 segundo
+              setTimeout(() => {
+                const payment = localStorage.getItem('pendingPayment')
+                if (payment) {
+                  const { giftId, transactionCode } = JSON.parse(payment)
+                  localStorage.removeItem('pendingPayment')
+                  window.location.href = `/pagamento/sucesso?gift=${giftId}&code=${transactionCode}`
+                }
+              }, 1000)
+            }
+          }, 500) // Verifica a cada 500ms
+          
+          // Limpar o intervalo após 30 minutos (timeout de segurança)
+          setTimeout(() => {
+            clearInterval(checkWindowClosed)
+          }, 30 * 60 * 1000)
           
           // Aguarda 2 segundos antes de fechar o loading
           setTimeout(() => {

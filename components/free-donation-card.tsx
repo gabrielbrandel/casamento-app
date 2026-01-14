@@ -69,7 +69,36 @@ export function FreeDonationCard() {
       const data = await response.json()
 
       if (response.ok && data.checkoutUrl) {
-        window.open(data.checkoutUrl, "_blank")
+        // Abre o checkout em nova aba
+        const pagBankWindow = window.open(data.checkoutUrl, "_blank")
+        
+        // Salvar informações para redirecionar após fechar a aba
+        localStorage.setItem('pendingPayment', JSON.stringify({
+          giftId: data.orderId || 'donation',
+          transactionCode: data.transactionCode,
+          timestamp: Date.now(),
+        }))
+        
+        // Detectar quando a aba do PagBank é fechada
+        const checkWindowClosed = setInterval(() => {
+          if (pagBankWindow && pagBankWindow.closed) {
+            clearInterval(checkWindowClosed)
+            
+            // Redirecionar para página de sucesso após 1 segundo
+            setTimeout(() => {
+              const payment = localStorage.getItem('pendingPayment')
+              if (payment) {
+                const { giftId, transactionCode } = JSON.parse(payment)
+                localStorage.removeItem('pendingPayment')
+                window.location.href = `/pagamento/sucesso?gift=${giftId}&code=${transactionCode}`
+              }
+            }, 1000)
+          }
+        }, 500)
+        
+        // Limpar o intervalo após 30 minutos
+        setTimeout(() => clearInterval(checkWindowClosed), 30 * 60 * 1000)
+        
         toast({
           title: "Redirecionando...",
           description: "Você será redirecionado para o pagamento",

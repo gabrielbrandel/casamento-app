@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     let orderId = null
     let paidChargeId = null
     let paidAmount = 0
+    let actualPaymentMethod = 'unknown'
 
     if (checkoutData.orders && checkoutData.orders.length > 0) {
       const orderBaseUrl = env === 'production'
@@ -95,31 +96,37 @@ export async function POST(req: NextRequest) {
               paidChargeId = paidCharge.id
               paidAmount = paidCharge.amount?.value || 0
               
+              // Detectar o método de pagamento real usado
+              if (paidCharge.payment_method) {
+                const paymentType = paidCharge.payment_method.type
+                if (paymentType === 'CREDIT_CARD') {
+                  actualPaymentMethod = 'cartao'
+                } else if (paymentType === 'DEBIT_CARD') {
+                  actualPaymentMethod = 'debito'
+                } else if (paymentType === 'PIX') {
+                  actualPaymentMethod = 'pix'
+                } else if (paymentType === 'BOLETO') {
+                  actualPaymentMethod = 'boleto'
+                }
+              }
+              
               console.log('✅ Pagamento confirmado!', {
                 orderId: orderId,
                 chargeId: paidChargeId,
                 amount: paidAmount,
+                paymentMethod: actualPaymentMethod,
                 paidAt: paidCharge.paid_at,
               })
               
               // Marcar o gift como comprado/pago
               const giftId = orderData.reference_id || checkoutData.reference_id
               if (giftId) {
-                try {
-                  const markPaidResponse = await fetch(
-                    `${new URL(req.url).origin}/api/gifts/mark-paid`,
-                    {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ giftId }),
-                    }
-                  )
-                  
-                  if (markPaidResponse.ok) {
-                    console.log(`✅ Gift ${giftId} marcado como comprado`)
-                  }
-                } catch (error) {
-                  console.error(`Erro ao marcar gift como pago:`, error)
+                const { markGiftAsPaid } = await import('@/lib/mark-gift-paid')
+                const result = await markGiftAsPaid(giftId)
+                if (result.success) {
+                  console.log(`✅ Gift ${giftId} marcado como comprado`)
+                } else {
+                  console.error(`❌ Erro ao marcar gift ${giftId} como pago:`, result.error)
                 }
               }
               
@@ -133,17 +140,82 @@ export async function POST(req: NextRequest) {
     // Atualizar status na tabela de transações do Supabase
     if (supabase) {
       try {
+        const updateData: any = {
+          status: isPaid ? 'completed' : 'processing',
+          updated_at: new Date().toISOString(),
+        }
+        
+        // Se temos o charge ID, salvar também
+        if (isPaid && paidChargeId) {
+          updateData.charge_id = paidChargeId
+        }
+        
+        // Se temos o order ID, salvar também
+        if (isPaid && orderId) {
+          updateData.order_id = orderId
+        }
+        
+        // Se detectamos o método de pagamento real, atualizar
+        if (isPaid && actualPaymentMethod !== 'unknown') {
+          updateData.payment_method = actualPaymentMethod
+        }
+        
+        // Salvar detalhes do pagamento para referência futura
+        if (isPaid && paidChargeId) {
+          // Buscar os detalhes completos do charge para salvar
+          try {
+            const chargeUrl = `${env === 'production' ? 'https://api.pagseguro.com' : 'https://sandbox.api.pagseguro.com'}/charges/${paidChargeId}`
+            const chargeResponse = await fetch(chargeUrl, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            if (chargeResponse.ok) {
+              const chargeData = await chargeResponse.json()
+              const paymentMethod = chargeData.payment_method
+              
+              if (paymentMethod) {
+                const paymentDetails: any = {
+                  type: paymentMethod.type,
+                }
+                
+                // Salvar detalhes específicos por tipo
+                if (paymentMethod.type === 'CREDIT_CARD' || paymentMethod.type === 'DEBIT_CARD') {
+                  paymentDetails.installments = paymentMethod.installments
+                  if (paymentMethod.card) {
+                    paymentDetails.card = {
+                      brand: paymentMethod.card.brand,
+                      first_digits: paymentMethod.card.first_digits,
+                      last_digits: paymentMethod.card.last_digits,
+                    }
+                  }
+                }
+                
+                updateData.payment_details = paymentDetails
+                console.log('💳 Detalhes do pagamento salvos:', paymentDetails)
+              }
+            }
+          } catch (error) {
+            console.error('⚠️ Erro ao buscar detalhes do pagamento:', error)
+            // Continua sem salvar detalhes
+          }
+        }
+
         const { error: updateError } = await supabase
           .from('transactions')
-          .update({
-            status: isPaid ? 'PAID' : 'PROCESSING',
-          })
+          .update(updateData)
           .eq('transaction_code', transactionCode)
 
         if (updateError) {
           console.error('Erro ao atualizar transação:', updateError)
         } else {
-          console.log(`✅ Transaction ${transactionCode} atualizada para ${isPaid ? 'PAID' : 'PROCESSING'} no Supabase`)
+          console.log(`✅ Transaction ${transactionCode} atualizada para ${isPaid ? 'completed' : 'processing'} no Supabase`)
+          if (paidChargeId) {
+            console.log(`✅ Charge ID ${paidChargeId} salvo para estornos futuros`)
+          }
         }
       } catch (error) {
         console.error('Erro ao atualizar transação:', error)

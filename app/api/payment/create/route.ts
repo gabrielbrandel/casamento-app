@@ -41,12 +41,14 @@ export async function POST(req: NextRequest) {
     const cleanCpf = buyerCpf.replace(/\D/g, '');
 
     // Monta JSON para API v3 do PagBank - Checkouts
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Nota: O "produto" é meramente ilustrativo - representa uma contribuição para o casamento
+    // A redirect_url e notification_urls não são suportadas pela API v3 de Checkouts
+    // A configuração de URLs deve ser feita no painel do PagBank
     const jsonData = {
       reference_id: String(giftId),
       items: [
         {
-          name: giftName,
+          name: `Presente de Casamento - ${giftName}`,
           quantity: 1,
           unit_amount: Math.round(amount * 100),
         }
@@ -55,10 +57,6 @@ export async function POST(req: NextRequest) {
         name: buyerName,
         email: buyerEmail,
         tax_id: cleanCpf,
-      },
-      checkout_url: `${appUrl}/pagamento/sucesso?gift=${giftId}`,
-      metadata: {
-        gift_id: giftId,
       },
     };
 
@@ -151,6 +149,11 @@ export async function POST(req: NextRequest) {
     if (!transactionCode) {
       transactionCode = checkoutData.id
     }
+
+    // Atualizar a redirect_url com o código da transação
+    // Nota: Isso requer recriar o checkout com a URL correta
+    // Como o PagBank não suporta variáveis dinâmicas, vamos salvar o código e 
+    // o frontend redirecionará manualmente após o pagamento
 
     console.log('✅ Pagamento criado com sucesso:', {
       checkoutId: checkoutData.id,

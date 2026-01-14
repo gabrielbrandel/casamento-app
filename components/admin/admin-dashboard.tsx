@@ -6,13 +6,14 @@ import { useAdminStore } from "@/hooks/use-admin-store"
 import { AdminStats } from "./admin-stats"
 import { AdminGiftList } from "./admin-gift-list"
 import { AdminMessages } from "./admin-messages"
-import { Gift, LayoutDashboard, MessageSquare, LogOut, Home } from "lucide-react"
+import { AdminTransactions } from "./admin-transactions"
+import { Gift, LayoutDashboard, MessageSquare, LogOut, Home, CreditCard } from "lucide-react"
 
 interface AdminDashboardProps {
   onLogout: () => void
 }
 
-type Tab = "dashboard" | "presentes" | "mensagens"
+type Tab = "dashboard" | "presentes" | "mensagens" | "transacoes"
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard")
@@ -97,6 +98,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               <MessageSquare className="w-4 h-4" />
               Mensagens
             </button>
+            <button
+              onClick={() => setActiveTab("transacoes")}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "transacoes"
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              Transações
+            </button>
           </div>
         </div>
       </nav>
@@ -106,6 +118,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {activeTab === "dashboard" && <AdminStats stats={stats} />}
         {activeTab === "presentes" && <AdminGiftList />}
         {activeTab === "mensagens" && <AdminMessages messages={messages} />}
+        {activeTab === "transacoes" && <AdminTransactions />}
       </main>
     </div>
   )
