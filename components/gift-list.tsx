@@ -87,8 +87,8 @@ export function GiftList() {
       // skip gifts with missing nome
       if (!gift.nome) return false
       
-      // Filter by favorites if enabled
-      if (showFavoritesOnly && !favorites.includes(gift.id)) return false
+      // Filter by favorites if enabled - se não tem favoritos, mostrar todos
+      if (showFavoritesOnly && favorites.length > 0 && !favorites.includes(gift.id)) return false
       
       const matchesSearch = gift.nome.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = category === "Todas" || gift.categoria === category
@@ -226,6 +226,15 @@ export function GiftList() {
               <Heart className={`w-4 h-4 mr-2 ${showFavoritesOnly ? "fill-current" : ""}`} />
               {showFavoritesOnly ? "Mostrar Todos" : `Meus Favoritos (${favorites.length})`}
             </Button>
+          </div>
+        )}
+
+        {/* Se não há favoritos e o filtro está ativo, mostrar todos */}
+        {showFavoritesOnly && favorites.length === 0 && (
+          <div className="mb-6 p-4 bg-muted rounded-lg text-center">
+            <p className="text-sm text-muted-foreground">
+              Você não tem favoritos marcados. Mostrando todos os presentes.
+            </p>
           </div>
         )}
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import type { Gift } from "@/data/gifts"
-import { Check, Gift as GiftIcon, EyeOff, RotateCcw, Heart, RefreshCw } from "lucide-react"
+import { Check, Gift as GiftIcon, EyeOff, RotateCcw, Heart, RefreshCw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAdminStore } from "@/hooks/use-admin-store"
 import { useGiftsStore } from "@/hooks/use-gifts-store"
@@ -46,6 +46,36 @@ export function AdminGiftList() {
       title: "Presente movido para Ativos",
       description: `${gift.nome} voltou para a lista de ativos.`,
     })
+  }
+
+  const excluirDoBanco = async (gift: Gift) => {
+    if (!confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o presente "${gift.nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/gifts/${gift.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir presente')
+      }
+
+      toast({
+        title: "✅ Presente Excluído",
+        description: `${gift.nome} foi removido permanentemente do banco de dados.`,
+      })
+
+      // Recarregar página para refletir mudanças
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "❌ Erro ao Excluir",
+        description: error instanceof Error ? error.message : "Tente novamente",
+      })
+    }
   }
 
   const verificarTodosPagamentos = async () => {
@@ -227,17 +257,39 @@ export function AdminGiftList() {
                       <RotateCcw className="w-4 h-4 mr-2 sm:mr-1" />
                       Remover
                     </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="w-full sm:w-auto"
+                      onClick={() => excluirDoBanco(gift)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2 sm:mr-1" />
+                      Excluir
+                    </Button>
                   </>
                 ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    onClick={() => removerParaAtivos(gift)}
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2 sm:mr-1" />
-                    Remover
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => removerParaAtivos(gift)}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 sm:mr-1" />
+                      Remover
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="w-full sm:w-auto"
+                      onClick={() => excluirDoBanco(gift)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2 sm:mr-1" />
+                      Excluir
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
