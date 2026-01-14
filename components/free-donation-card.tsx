@@ -1,142 +1,27 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Heart, DollarSign } from "lucide-react"
+import { useState } from "react"
+import { Heart, Copy, Check } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 
 export function FreeDonationCard() {
   const [isOpen, setIsOpen] = useState(false)
-  const [amount, setAmount] = useState("")
-  const [nome, setNome] = useState("")
-  const [email, setEmail] = useState("")
-  const [cpf, setCpf] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { toast } = useToast()
+  const pixKey = "gabrielbrandel@gmail.com"
 
-  // Carregar dados salvos do localStorage
-  useEffect(() => {
-    if (typeof window === 'undefined') return
+  const copyPixKey = () => {
+    navigator.clipboard.writeText(pixKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 3000)
     
-    const savedData = localStorage.getItem('giftFormData')
-    if (savedData) {
-      try {
-        const { nome: savedNome, cpf: savedCpf, email: savedEmail } = JSON.parse(savedData)
-        if (savedNome) setNome(savedNome)
-        if (savedCpf) setCpf(savedCpf)
-        if (savedEmail) setEmail(savedEmail)
-      } catch (error) {
-        console.error('Erro ao carregar dados salvos:', error)
-      }
-    }
-  }, [])
-
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    const cents = numbers.padStart(3, "0")
-    const reais = cents.slice(0, -2)
-    const centavos = cents.slice(-2)
-    return `R$ ${parseInt(reais).toLocaleString("pt-BR")},${centavos}`
-  }
-
-  const handleAmountChange = (value: string) => {
-    setAmount(formatCurrency(value))
-  }
-
-  const handleSubmit = async () => {
-    if (!nome.trim() || !email.trim() || !cpf.trim() || !amount) {
-      toast({
-        variant: "destructive",
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos para continuar",
-      })
-      return
-    }
-
-    const numericAmount = parseFloat(amount.replace(/[^\d,]/g, "").replace(",", "."))
-    if (numericAmount < 5) {
-      toast({
-        variant: "destructive",
-        title: "Valor mínimo",
-        description: "O valor mínimo para doação é R$ 5,00",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("/api/payment/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          giftId: "doacao-livre",
-          giftName: `Contribuição Livre - ${amount}`,
-          amount: numericAmount,
-          buyerName: nome,
-          buyerEmail: email,
-          buyerCpf: cpf.replace(/\D/g, ""),
-          paymentMethod: "pix",
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.checkoutUrl) {
-        // Abre o checkout em nova aba
-        const pagBankWindow = window.open(data.checkoutUrl, "_blank")
-        
-        // Salvar informações para redirecionar após fechar a aba
-        localStorage.setItem('pendingPayment', JSON.stringify({
-          giftId: data.orderId || 'donation',
-          transactionCode: data.transactionCode,
-          timestamp: Date.now(),
-        }))
-        
-        // Detectar quando a aba do PagBank é fechada
-        const checkWindowClosed = setInterval(() => {
-          if (pagBankWindow && pagBankWindow.closed) {
-            clearInterval(checkWindowClosed)
-            
-            // Redirecionar para página de sucesso após 1 segundo
-            setTimeout(() => {
-              const payment = localStorage.getItem('pendingPayment')
-              if (payment) {
-                const { giftId, transactionCode } = JSON.parse(payment)
-                localStorage.removeItem('pendingPayment')
-                window.location.href = `/pagamento/sucesso?gift=${giftId}&code=${transactionCode}`
-              }
-            }, 1000)
-          }
-        }, 500)
-        
-        // Limpar o intervalo após 30 minutos
-        setTimeout(() => clearInterval(checkWindowClosed), 30 * 60 * 1000)
-        
-        toast({
-          title: "Redirecionando...",
-          description: "Você será redirecionado para o pagamento",
-        })
-        setIsOpen(false)
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: data.error || "Não foi possível processar a doação",
-        })
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao conectar com o servidor",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    toast({
+      title: "✅ Chave PIX copiada!",
+      description: "Cole no seu app de pagamento",
+    })
   }
 
   return (
@@ -160,8 +45,8 @@ export function FreeDonationCard() {
           </div>
 
           <Button variant="default" size="lg" className="mt-4">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Fazer Doação
+            <Copy className="w-4 h-4 mr-2" />
+            Ver Chave PIX
           </Button>
         </div>
       </div>
@@ -171,72 +56,40 @@ export function FreeDonationCard() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="w-5 h-5 text-primary fill-current" />
-              Contribuição Livre
+              Chave PIX para Doação
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="amount">Valor da Contribuição *</Label>
-              <Input
-                id="amount"
-                value={amount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                placeholder="R$ 0,00"
-                className="text-lg font-semibold"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Valor mínimo: R$ 5,00</p>
-            </div>
-
-            <div>
-              <Label htmlFor="nome">Nome Completo *</Label>
-              <Input
-                id="nome"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Seu nome"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cpf">CPF *</Label>
-              <Input
-                id="cpf"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                placeholder="000.000.000-00"
-                maxLength={11}
-              />
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <Label className="text-sm font-medium">Chave PIX</Label>
+              <div className="flex items-center gap-2 bg-background rounded-md p-3 border">
+                <code className="flex-1 text-sm font-mono break-all">{pixKey}</code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={copyPixKey}
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                📱 Copie a chave e faça a transferência no seu app de pagamento
+              </p>
             </div>
 
             <Button 
-              onClick={handleSubmit} 
+              onClick={copyPixKey} 
               className="w-full" 
               size="lg"
-              disabled={isLoading}
             >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Processando...
-                </div>
-              ) : (
-                <>
-                  <Heart className="w-4 h-4 mr-2 fill-current" />
-                  Ir para Pagamento
-                </>
-              )}
+              <Copy className="w-4 h-4 mr-2" />
+              Copiar Chave PIX
             </Button>
           </div>
         </DialogContent>
