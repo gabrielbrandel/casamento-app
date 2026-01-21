@@ -120,6 +120,7 @@ function normalizeGift(row: any): any {
     ativo: row.ativo,
     status: row.status,
     compradoPor: row.compradopor || row.compradoPor || null,
+    ocultarFisico: row.ocultarfisico ?? row.ocultarFisico ?? false,
   }
 }
 
@@ -167,11 +168,12 @@ export async function upsertGift(gift: any) {
       ativo: gift.ativo !== undefined ? gift.ativo : current?.ativo,
       status: gift.status !== undefined ? gift.status : current?.status,
       compradoPor: gift.compradoPor !== undefined ? gift.compradoPor : current?.compradoPor,
+      ocultarFisico: gift.ocultarFisico !== undefined ? gift.ocultarFisico : current?.ocultarFisico,
     }
     
     const query = `
-      INSERT INTO gifts(id, nome, categoria, precoEstimado, faixaPreco, imageUrl, ativo, status, compradoPor)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      INSERT INTO gifts(id, nome, categoria, precoEstimado, faixaPreco, imageUrl, ativo, status, compradoPor, ocultarFisico)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       ON CONFLICT (id) DO UPDATE SET
         nome=EXCLUDED.nome,
         categoria=EXCLUDED.categoria,
@@ -180,7 +182,8 @@ export async function upsertGift(gift: any) {
         imageUrl=EXCLUDED.imageUrl,
         ativo=EXCLUDED.ativo,
         status=EXCLUDED.status,
-        compradoPor=EXCLUDED.compradoPor;
+        compradoPor=EXCLUDED.compradoPor,
+        ocultarFisico=EXCLUDED.ocultarFisico;
     `
     await pool.query(query, [
       merged.id,
@@ -192,6 +195,7 @@ export async function upsertGift(gift: any) {
       merged.ativo,
       merged.status,
       merged.compradoPor ? JSON.stringify(merged.compradoPor) : null,
+      merged.ocultarFisico ?? false,
     ])
     return merged
   }
@@ -239,12 +243,12 @@ export async function replaceAllGifts(gifts: any[]) {
     const pool = await getPgPool()
     // simple approach: delete and re-insert
     await pool.query("TRUNCATE TABLE gifts")
-    const insertQuery = `INSERT INTO gifts(id, nome, categoria, precoEstimado, faixaPreco, imageUrl, ativo, status, compradoPor) VALUES `
+    const insertQuery = `INSERT INTO gifts(id, nome, categoria, precoEstimado, faixaPreco, imageUrl, ativo, status, compradoPor, ocultarFisico) VALUES `
     const chunks: string[] = []
     const values: any[] = []
     gifts.forEach((gift, i) => {
-      const idx = i * 9
-      chunks.push(`($${idx + 1},$${idx + 2},$${idx + 3},$${idx + 4},$${idx + 5},$${idx + 6},$${idx + 7},$${idx + 8},$${idx + 9})`)
+      const idx = i * 10
+      chunks.push(`($${idx + 1},$${idx + 2},$${idx + 3},$${idx + 4},$${idx + 5},$${idx + 6},$${idx + 7},$${idx + 8},$${idx + 9},$${idx + 10})`)
       values.push(
         gift.id,
         gift.nome,
@@ -255,6 +259,7 @@ export async function replaceAllGifts(gifts: any[]) {
         gift.ativo,
         gift.status,
         gift.compradoPor ? JSON.stringify(gift.compradoPor) : null,
+        gift.ocultarFisico ?? false,
       )
     })
     if (chunks.length === 0) return []

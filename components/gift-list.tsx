@@ -37,6 +37,7 @@ export function GiftList() {
   const [newImage, setNewImage] = useState("")
   const [newCategoria, setNewCategoria] = useState("")
   const [adminHighlightId, setAdminHighlightId] = useState<string | null>(null)
+  const [showHiddenPhysicalOnly, setShowHiddenPhysicalOnly] = useState(false)
   const handleAddGift = () => {
     if (!newNome.trim() || !newPreco.trim()) {
       alert("Nome e preço são obrigatórios!")
@@ -89,6 +90,8 @@ export function GiftList() {
       
       // Filter by favorites if enabled - se não tem favoritos, mostrar todos
       if (showFavoritesOnly && favorites.length > 0 && !favorites.includes(gift.id)) return false
+      // Admin: filtrar apenas itens com físico oculto
+      if (showHiddenPhysicalOnly && !gift.ocultarFisico) return false
       
       const matchesSearch = gift.nome.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = category === "Todas" || gift.categoria === category
@@ -116,7 +119,7 @@ export function GiftList() {
     }
 
     return base
-  }, [gifts, search, category, priceRange, status, sortOrder, isAdminLoggedIn, adminHighlightId, showFavoritesOnly, favorites])
+  }, [gifts, search, category, priceRange, status, sortOrder, isAdminLoggedIn, adminHighlightId, showFavoritesOnly, favorites, showHiddenPhysicalOnly])
 
   const handleConfirmGift = (data: {
     nome: string
@@ -225,6 +228,20 @@ export function GiftList() {
             >
               <Heart className={`w-4 h-4 mr-2 ${showFavoritesOnly ? "fill-current" : ""}`} />
               {showFavoritesOnly ? "Mostrar Todos" : `Meus Favoritos (${favorites.length})`}
+            </Button>
+          </div>
+        )}
+
+        {/* Filtro Admin: presentes com opção física oculta */}
+        {isAdminLoggedIn && (
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+            <Button
+              variant={showHiddenPhysicalOnly ? "default" : "outline"}
+              onClick={() => setShowHiddenPhysicalOnly(!showHiddenPhysicalOnly)}
+              className="w-full sm:w-auto"
+            >
+              <Shield className={`w-4 h-4 mr-2 ${showHiddenPhysicalOnly ? "fill-current" : ""}`} />
+              {showHiddenPhysicalOnly ? "Mostrar todos" : "Somente sem físico"}
             </Button>
           </div>
         )}

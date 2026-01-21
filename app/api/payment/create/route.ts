@@ -49,10 +49,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // URL base conforme ambiente - usando v3 (PagBank) - Checkouts
+    // URL base conforme ambiente - API Orders (solicitado na homologação)
     const baseUrl = env === 'production' 
-      ? 'https://api.pagseguro.com/checkouts'
-      : 'https://sandbox.api.pagseguro.com/checkouts';
+      ? 'https://api.pagseguro.com/orders'
+      : 'https://sandbox.api.pagseguro.com/orders';
     
     console.log('⚙️ Configuração PagBank v3:', {
       env,
@@ -64,24 +64,26 @@ export async function POST(req: NextRequest) {
     // Formata CPF para o padrão esperado
     const cleanCpf = buyerCpf.replace(/\D/g, '');
 
-    // Monta JSON para API v3 do PagBank - Checkouts
-    // Nota: O "produto" é meramente ilustrativo - representa uma contribuição para o casamento
-    // A redirect_url e notification_urls não são suportadas pela API v3 de Checkouts
-    // A configuração de URLs deve ser feita no painel do PagBank
+    // Monta JSON para API Orders do PagBank
+    // https://developer.pagbank.com.br/reference/criar-pedido
     const jsonData = {
-      reference_id: String(giftId),
-      items: [
-        {
-          name: `Presente de Casamento - ${giftName}`,
-          quantity: 1,
-          unit_amount: Math.round(amount * 100),
-        }
-      ],
+      reference_id: `GIFT_${giftId}_${Date.now()}`,
       customer: {
         name: buyerName,
         email: buyerEmail,
         tax_id: cleanCpf,
       },
+      items: [
+        {
+          reference_id: String(giftId),
+          name: `Presente de Casamento - ${giftName}`,
+          quantity: 1,
+          unit_amount: Math.round(amount * 100),
+        }
+      ],
+      notification_urls: [
+        `${process.env.NEXT_PUBLIC_APP_URL || 'https://casamento-app-nu.vercel.app'}/api/payment/webhook`
+      ],
     };
 
     console.log('🔍 PagBank Request:', {

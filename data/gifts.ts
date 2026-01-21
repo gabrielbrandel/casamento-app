@@ -7,6 +7,8 @@ export interface Gift {
   imageUrl: string
   status: "disponivel" | "processando_pagamento" | "comprado" | "obtido"
   ativo?: boolean
+  /** Quando true, esconde a opção de presente físico para o público */
+  ocultarFisico?: boolean
   compradoPor?: {
     nome: string
     familia: string

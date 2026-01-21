@@ -7,7 +7,7 @@ import type { Gift } from "@/data/gifts"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Heart, Check, X, EyeOff, Eye } from "lucide-react"
+import { Heart, Check, X, EyeOff, Eye, Ban } from "lucide-react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useAuthStore } from "@/hooks/use-auth-store"
 import { useAdminStore } from "@/hooks/use-admin-store"
@@ -25,7 +25,7 @@ interface GiftCardProps {
 export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
   const isComprado = gift.status === "comprado"
   const { isAdminLoggedIn } = useAuthStore()
-  const { setGiftVisibility: setAdminVisibility, setGiftObtained: setAdminObtained } = useAdminStore()
+  const { setGiftVisibility: setAdminVisibility, setGiftObtained: setAdminObtained, setGiftHidePhysical } = useAdminStore()
   const { setGiftVisibility: setPublicVisibility, setGiftObtained: setPublicObtained } = useGiftsStore()
   const { isFavorite, toggleFavorite } = useFavoritesStore()
   const { toast } = useToast()
@@ -34,6 +34,7 @@ export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
   const [confirmAction, setConfirmAction] = useState<null | "toggleActive" | "toggleObtained">(null)
   
   const isFav = isFavorite(gift.id)
+  const isPhysicalHidden = gift.ocultarFisico === true
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -81,6 +82,27 @@ export function GiftCard({ gift, onClick, onRemove }: GiftCardProps) {
                 isFav ? "fill-red-500 text-red-500" : "text-muted-foreground"
               }`}
             />
+          </button>
+        )}
+
+        {/* Botão Admin: ocultar opção de presente físico */}
+        {isAdminLoggedIn && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const next = !isPhysicalHidden
+              setGiftHidePhysical(gift.id, next)
+              toast({
+                title: next ? "Opção física oculta" : "Opção física liberada",
+                description: next ? "O público verá apenas pagamento online." : "O público volta a ver a opção de presente físico.",
+              })
+            }}
+            className={`absolute top-2 right-2 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm transition-colors ${
+              isPhysicalHidden ? "text-amber-600 border border-amber-500/40" : "text-muted-foreground"
+            }`}
+            title={isPhysicalHidden ? "Mostrar opção física para o público" : "Ocultar opção física para o público"}
+          >
+            <Ban className={`w-5 h-5 ${isPhysicalHidden ? "fill-amber-500/50" : ""}`} />
           </button>
         )}
 

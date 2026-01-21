@@ -48,6 +48,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
   const [showConfetti, setShowConfetti] = useState(false)
 
   const [imageUrlInput, setImageUrlInput] = useState("")
+  const hidePhysicalOption = gift?.ocultarFisico === true
 
   // Carregar dados salvos do localStorage
   useEffect(() => {
@@ -90,6 +91,17 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
     setOpenPriceEditor(false)
   }, [gift])
 
+  // Se o presente tiver a opção física oculta, força pagamento online
+  useEffect(() => {
+    if (hidePhysicalOption) {
+      setContribuirDinheiro(true)
+      setTipoPagamento("pix")
+    } else {
+      setContribuirDinheiro(false)
+      setTipoPagamento("fisico")
+    }
+  }, [hidePhysicalOption, gift?.id])
+
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, "")
     if (numbers.length <= 11) return numbers
@@ -106,7 +118,7 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
       return
     }
 
-    const finalTipoPagamento = contribuirDinheiro ? metodoPagamento : "fisico"
+    const finalTipoPagamento = hidePhysicalOption ? metodoPagamento : contribuirDinheiro ? metodoPagamento : "fisico"
     
     // Se for pagamento online (Pix ou Cartão), redireciona para PagSeguro
     if (finalTipoPagamento === "pix" || finalTipoPagamento === "cartao") {
@@ -452,21 +464,23 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                 <Label className="text-base">Como deseja presentear?</Label>
                 
                 {/* Opção: Presente Físico */}
-                <div className="flex items-start space-x-3 p-4 border-2 rounded-lg hover:border-primary/50 transition-colors">
-                  <input
-                    type="checkbox"
-                    id="fisico"
-                    checked={!contribuirDinheiro}
-                    onChange={(e) => {
-                      setContribuirDinheiro(!e.target.checked)
-                    }}
-                    className="mt-1 h-5 w-5 rounded border-gray-300 cursor-pointer"
-                  />
-                  <Label htmlFor="fisico" className="flex items-start gap-3 flex-1 cursor-pointer">
-                    <GiftIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                    <span className="text-base">Vou comprar o presente físico e entregar aos noivos.</span>
-                  </Label>
-                </div>
+                {!hidePhysicalOption && (
+                  <div className="flex items-start space-x-3 p-4 border-2 rounded-lg hover:border-primary/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id="fisico"
+                      checked={!contribuirDinheiro}
+                      onChange={(e) => {
+                        setContribuirDinheiro(!e.target.checked)
+                      }}
+                      className="mt-1 h-5 w-5 rounded border-gray-300 cursor-pointer"
+                    />
+                    <Label htmlFor="fisico" className="flex items-start gap-3 flex-1 cursor-pointer">
+                      <GiftIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                      <span className="text-base">Vou comprar o presente físico e entregar aos noivos.</span>
+                    </Label>
+                  </div>
+                )}
 
                 {/* Opção: Contribuir com PagSeguro */}
                 <div className="space-y-3">
@@ -512,6 +526,12 @@ export function GiftModal({ gift, isOpen, onClose, onConfirm }: GiftModalProps) 
                         <p className="text-sm text-green-900 font-medium">✅ Você será redirecionado ao checkout seguro do PagSeguro</p>
                         <p className="text-xs text-green-700 mt-1">Escolha entre Pix (instantâneo) ou Cartão de Crédito com parcelamento</p>
                       </div>
+                    </div>
+                  )}
+
+                  {hidePhysicalOption && !contribuirDinheiro && (
+                    <div className="ml-8 p-3 border border-amber-200 bg-amber-50 rounded-lg text-sm text-amber-800">
+                      Este presente está disponível apenas para contribuição online.
                     </div>
                   )}
                 </div>

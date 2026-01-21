@@ -41,6 +41,10 @@ export function useAdminStore() {
     upsertGift({ id: giftId, ativo })
   }, [upsertGift])
 
+  const setGiftHidePhysical = useCallback((giftId: string, ocultarFisico: boolean) => {
+    upsertGift({ id: giftId, ocultarFisico })
+  }, [upsertGift])
+
   const setGiftObtained = useCallback((giftId: string, obtained: boolean) => {
     upsertGift({ id: giftId, status: obtained ? "obtido" : "disponivel" })
   }, [upsertGift])
@@ -116,6 +120,7 @@ export function useAdminStore() {
     updateGiftPrice,
     setGiftObtained,
     setGiftVisibility,
+    setGiftHidePhysical,
     addGift,
     getPurchasedGifts,
     getMessages,
